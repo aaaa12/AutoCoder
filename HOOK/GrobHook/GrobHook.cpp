@@ -25,6 +25,7 @@ CGrobHookApp::CGrobHookApp()
 {
 	// TODO: 在此处添加构造代码，
 	// 将所有重要的初始化放置在 InitInstance 中
+	
 }
 
 

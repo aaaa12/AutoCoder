@@ -33,10 +33,7 @@ BEGIN_MESSAGE_MAP(CGrobHookDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_MESSAGE(WM_SEND_TEXT2WIN, OnSendText2Win)
 	ON_BN_CLICKED(IDC_BTN_HOOK, &CGrobHookDlg::OnBnClickedBtnHook)
-	ON_BN_CLICKED(IDC_BUTTON2, &CGrobHookDlg::OnBnClickedButton2)
-	ON_BN_CLICKED(IDC_BUTTON3, &CGrobHookDlg::OnBnClickedButton3)
-	ON_BN_CLICKED(IDC_BUTTON4, &CGrobHookDlg::OnBnClickedButton4)
-	ON_BN_CLICKED(IDC_BUTTON5, &CGrobHookDlg::OnBnClickedButton5)
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 
@@ -52,6 +49,12 @@ BOOL CGrobHookDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+	if (NULL == m_pMsgDlg)
+	{
+		// 创建非模态对话框实例  WS_EX_NOACTIVATE 
+		m_pMsgDlg = new CMsgDlg();
+		m_pMsgDlg->Create(IDD_MSG, this);
+	}
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -93,13 +96,12 @@ HCURSOR CGrobHookDlg::OnQueryDragIcon()
 }
 
 //原名引用
-_declspec(dllimport)  void SetHook(HWND hd,HHOOK &hKeyBoard);
+_declspec(dllimport)  void SetHook(HWND hd,HHOOK &hKeyBoard, HHOOK &hMouse);
 
-HHOOK g_hKeyBoard;
 void CGrobHookDlg::OnBnClickedBtnHook()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	SetHook(m_hWnd, g_hKeyBoard);
+	SetHook(m_hWnd, g_hKeyBoard,g_hMouse);
 }
 
 //const char *noShift = "`1234567890-=";
@@ -134,85 +136,89 @@ char SwitchNoShift(char c)
 	return 0;
 }
 
+
+
 LRESULT CGrobHookDlg::OnSendText2Win(WPARAM wParam, LPARAM lParam)
 {
+
 	if (lParam == 0)
 	{
-		char c = MapVirtualKey(wParam, MAPVK_VK_TO_CHAR);
-		if ('A' <= c && c <= 'Z')
+		if (VK_BACK == wParam)//key code of Backspace
 		{
-			if (!GetAsyncKeyState(VK_SHIFT))
-				c = SwitchNoShift(c);
+			if(value.size() > 0)
+				value = value.substr(0, value.size() - 1);
 		}
-		else {
-			if (GetAsyncKeyState(VK_SHIFT))
+		else
+		{
+			char c = MapVirtualKey(wParam, MAPVK_VK_TO_CHAR);
+			if ('A' <= c && c <= 'Z')
 			{
-				c = SwitchShift(c);
+				if (!GetAsyncKeyState(VK_SHIFT))
+					c = SwitchNoShift(c);
 			}
+			else {
+				if (GetAsyncKeyState(VK_SHIFT))
+				{
+					c = SwitchShift(c);
+				}
+			}
+
+			value = value + c;
+
 		}
-		value = value + c;
+		if(!m_pMsgDlg->IsWindowVisible())
+			m_pMsgDlg->ShowWindow(SW_SHOWNOACTIVATE);
+		m_pMsgDlg->SetTxt(value.c_str());
 	}
-	else 
+	else    
+
+
 	{
 		cmd = *((string*)lParam);
 		if ("Clear" == cmd)
 		{
 			value = "";
+			if(m_pMsgDlg->IsWindowVisible())
+				m_pMsgDlg->ShowWindow(SW_HIDE);
+			m_pMsgDlg->SetTxt("");
 			return 0;
 		}
 		else if("Search" == cmd)
 		{
-			//MessageBox(value.c_str());
-			TypeText(value+".txt");
+			if (m_pMsgDlg->IsWindowVisible())
+				m_pMsgDlg->ShowWindow(SW_HIDE);
+			m_pMsgDlg->SetTxt("");
+			value = value + ".txt";
+
+			while (GetAsyncKeyState(18)) {};//wait for alt up
+
+
+			TypeTextFile(value);
+
+			value = "";
 			return 0;
 		}
 	}
 		
-	 
-	//MessageBox(stmp);
-	//Sleep(1000);
-	/*if (GetKeyState(VK_SHIFT))
-	{
-		keybd_event(VK_LSHIFT, 0, 0, 0);
-		keybd_event(wParam, 0, 0, 0);
-		keybd_event(wParam, 0, KEYEVENTF_KEYUP, 0);
-		keybd_event(VK_LSHIFT, 0, KEYEVENTF_KEYUP, 0);
-	}
-	else
-	{
-		keybd_event(wParam, 0, 0, 0);
-		keybd_event(wParam, 0, KEYEVENTF_KEYUP, 0);
-	}*/
-		
 	return 0;
 }
 
-/*
-` 0xc0 ~
-
-; 0xba :
-= 0xbb +
-, 0xbc <
-- 0xbd _
-. 0xbe >
-/ 0xbf ?
-
-
-[ 0xdb {
-\ 0xdc |
-] 0xdd }
-' 0xde "
-*/
-
+//no shift type value
 bool CheckShift(char c, int &key)
 {
-	//number line
-	string s = "!@#$%^&*()";
-	for (int i = 0; i < 9; i++)
+	if ('A' <= c && c <= 'Z')
+	{
+		key = c;
+		return true;
+	}
+
+	//number line  1234567890
+	string s =    ")!@#$%^&*(";
+	for (int i = 0; i < 10; i++)
 	{
 		if (c == s[i])
 		{
-			key = i + '1';
+			key = i + '0';
 			return true;
 		}
 	}
@@ -243,9 +249,26 @@ bool CheckShift(char c, int &key)
 
 	return false;
 }
-
+const int offset = 'A' - 'a';
 bool CheckNoShift(char c, int &key)
 {
+	if ('a' <= c && c <= 'z')
+	{
+		key = c + offset;
+		return true;
+	}
+
+	if ('0' <= c && c <= '9')
+	{
+		key = c;
+		return true;
+	}
+
+	if (' '==c)
+	{
+		key = c;
+		return true;
+	}
 
 	if ('`' == c)
 	{
@@ -271,175 +294,28 @@ bool CheckNoShift(char c, int &key)
 			return true;
 		}
 	}
-	
 	return false;
 
 }
-
-void CGrobHookDlg::OnBnClickedButton2()
-{
-	// TODO: 在此添加控件通知处理程序代码
-	
-	ifstream myfile("A.txt");
-	string temp;	
-	int offset = 'A' - 'a';
-	int key;
-	while(getline(myfile,temp)) //按行读取字符串 	
-	{	
-		Sleep(2000);
-		for (int i = 0; i < temp.size(); i++)
-		{
-			Sleep(1000);
-			/*CString str;
-			str.Format("%x", temp[i]);
-			MessageBox(str);*/
-			if ('a' <= temp[i] && temp[i] <= 'z')
-			{
-				key = temp[i] + offset;
-				keybd_event(key, 0, 0, 0);
-				keybd_event(key, 0, KEYEVENTF_KEYUP, 0);
-			}
-			else if ('A' <= temp[i] && temp[i] <= 'Z')
-			{
-				keybd_event(VK_LSHIFT, 0, 0, 0);
-				keybd_event(temp[i], 0, 0, 0);
-				keybd_event(temp[i], 0, KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_LSHIFT, 0, KEYEVENTF_KEYUP, 0);
-			}
-			else if (CheckShift(temp[i], key))
-			{
-				keybd_event(VK_LSHIFT, 0, 0, 0);
-				keybd_event(key, 0, 0, 0);
-				keybd_event(key, 0, KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_LSHIFT, 0, KEYEVENTF_KEYUP, 0);
-			}
-			else if (CheckNoShift(temp[i], key))
-			{
-
-				keybd_event(key, 0, 0, 0);
-				keybd_event(key, 0, KEYEVENTF_KEYUP, 0);
-			}
-			else
-			{
-				keybd_event(temp[i], 0, 0, 0);
-				keybd_event(temp[i], 0, KEYEVENTF_KEYUP, 0);
-			}
-		}
-		keybd_event(VK_RETURN, 0, 0, 0);
-		keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
-	} 	
-	myfile.close();
-	
-	//ifstream infile;
-	//string file = "A.txt";
-	//infile.open(file.data());   //将文件流对象与文件连接起来 
-	//assert(infile.is_open());   //若失败,则输出错误消息,并终止程序运行 
-	//char c;infile >> noskipws;
-	//while (!infile.eof())
-	//{
-	//	Sleep(1000);
-	//	infile >> c;
-	//	CString str;
-	//	str.Format("%x",c);
-	//	MessageBox(str);
-
-	    //ASCII
-		//a 0x61
-		//A Ox41
-		//回车 无
-	    // tab 0x9
-		// 0 0x30
-	
-		/*key
-	    //VK_SHIFT(10)
-			//SHIFT key
-		VK_SPACE(20)
-			SPACEBAR
-		 0 (30)
-			
-		 A  (41)
-			* /
-
-		/*VK_TAB(09)
-			TAB key*/
-		//keybd_event(c, 0, 0, 0);
-		//keybd_event(c, 0, KEYEVENTF_KEYUP, 0);
-
-		//keybd_event('W', 0, 0, 0);
-		//keybd_event('W', 0, KEYEVENTF_KEYUP, 0);
-
-		//keybd_event('c', 0, 0, 0);
-		//keybd_event('c', 0, KEYEVENTF_KEYUP, 0);
-
-
-
-		
-			
-	//}
-	//infile.close();             //关闭文件输入流 
-
-}
-
-
-
-
-
-void CGrobHookDlg::OnBnClickedButton3()
-{
-	// TODO: 在此添加控件通知处理程序代码
-	clock_t var1, var2;
-	var1 = clock();
-	CString str;
-	str.Format("%ld", var1);
-	MessageBox(str);
-}
-
-
-void CGrobHookDlg::OnBnClickedButton4()
-{
-	// TODO: 在此添加控件通知处理程序代码
-
-	char a=MapVirtualKey('A',MAPVK_VK_TO_CHAR);
-
-	
-	CString str;
-	str.Format("%c", a);
-	MessageBox(str);
-}
+int WaitTime = 16;
 
 void CGrobHookDlg::TypeStr(string str)
 {
 	//close caps lock 
-	//BYTE btKeyState[256];
-	//GetKeyboardState(btKeyState);
-	//if (btKeyState[VK_CAPITAL] & 1)
-	//{
-	//	keybd_event(VK_CAPITAL, 0, 0, 0);
-	//	keybd_event(VK_CAPITAL, 0, KEYEVENTF_KEYUP, 0);
-	//}
+	BYTE btKeyState[256];
+	GetKeyboardState(btKeyState);
+	if (btKeyState[VK_CAPITAL] & 1)
+	{
+		keybd_event(VK_CAPITAL, 0, 0, 0);
+		keybd_event(VK_CAPITAL, 0, KEYEVENTF_KEYUP, 0);
+	}
 
-	int offset = 'A' - 'a';
 	int key;
 	for (int i = 0; i < str.size(); i++)
 	{
-		Sleep(1000);
-		/*CString str;
-		str.Format("%x", temp[i]);
-		MessageBox(str);*/
-		if ('a' <= str[i] && str[i] <= 'z')
-		{
-			key = str[i] + offset;
-			keybd_event(key, 0, 0, 0);
-			keybd_event(key, 0, KEYEVENTF_KEYUP, 0);
-		}
-		else if ('A' <= str[i] && str[i] <= 'Z')
-		{
-			keybd_event(VK_LSHIFT, 0, 0, 0);
-			keybd_event(str[i], 0, 0, 0);
-			keybd_event(str[i], 0, KEYEVENTF_KEYUP, 0);
-			keybd_event(VK_LSHIFT, 0, KEYEVENTF_KEYUP, 0);
-		}
-		else if (CheckShift(str[i], key))
+
+		Sleep(WaitTime);
+		if (CheckShift(str[i], key))
 		{
 			keybd_event(VK_LSHIFT, 0, 0, 0);
 			keybd_event(key, 0, 0, 0);
@@ -451,20 +327,50 @@ void CGrobHookDlg::TypeStr(string str)
 			keybd_event(key, 0, 0, 0);
 			keybd_event(key, 0, KEYEVENTF_KEYUP, 0);
 		}
-		else
+		else//should be no other
 		{
 			keybd_event(str[i], 0, 0, 0);
 			keybd_event(str[i], 0, KEYEVENTF_KEYUP, 0);
 		}
 	}
 }
-void CGrobHookDlg::TypeText(string path)
+
+
+
+void trim(string &s)
 {
+	if (!s.empty())
+	{
+		s.erase(0, s.find_first_not_of(" "));
+		s.erase(s.find_last_not_of(" ") + 1);
+	}
+}
 
-	TypeStr("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
-	keybd_event(VK_RETURN, 0, 0, 0);
-	keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
-
+void  SpaceAndTabNum(string str,int& sNum,int &tNum)
+{
+	int p=0;
+	sNum = 0;//space count
+	tNum = 0;//tab count
+	while (' ' == str[p] || '	' == str[p])
+	{
+		if (' ' == str[p])
+			sNum++;
+		if ('	' == str[p])
+			tNum++;
+		p++;
+	}
+}
+void TypeBackSpace(int times)
+{
+	for (int i = 0; i < times; i++)
+	{
+		Sleep(WaitTime);
+		keybd_event(VK_BACK, 0, 0, 0);
+		keybd_event(VK_BACK, 0, KEYEVENTF_KEYUP, 0);
+	}
+}
+void CGrobHookDlg::TypeTextFile(string path)
+{
 	ifstream myfile(path);
 
 	if (!myfile.good())
@@ -475,19 +381,34 @@ void CGrobHookDlg::TypeText(string path)
 	}
 
 	string temp;
-	while (getline(myfile, temp)) //按行读取字符串 	
+	int sNum=0,tNum=0;
+	while (getline(myfile, temp)) //line by line call TypeStr
 	{
-		Sleep(1000);
+		Sleep(100);
+
 		keybd_event(VK_RETURN, 0, 0, 0);
 		keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
+		TypeBackSpace(sNum+ tNum);//delete space and tab int prior line begining
+		SpaceAndTabNum(temp, sNum, tNum);
+	
+		TypeStr(temp);
+		
 	}
 	myfile.close();
 }
 
-void CGrobHookDlg::OnBnClickedButton5()
+void CGrobHookDlg::OnDestroy()
 {
-	// TODO: 在此添加控件通知处理程序代码
-	Sleep(5000);
-	
-	TypeStr("ABC123");
+	CDialogEx::OnDestroy();
+
+	// TODO: 在此处添加消息处理程序代码
+	if (NULL != m_pMsgDlg)
+	{
+		// 创建非模态对话框实例   
+		m_pMsgDlg->DestroyWindow();
+		delete m_pMsgDlg;
+		m_pMsgDlg = NULL;
+	}
+	UnhookWindowsHookEx(g_hKeyBoard);
+	UnhookWindowsHookEx(g_hMouse);
 }
