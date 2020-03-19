@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <fstream>
 #include <cassert>
+
 #include <bits/stdc++.h>
 using namespace std;
 
@@ -20,6 +21,7 @@ string sCmdSearch = "Search";
 //长度不超过8,这样，在其他线程中也能调用这个窗口
 #pragma data_seg("MySec")
 HWND g_hWnd = NULL;//一定要初始化化
+HWND g_hFocusWnd = NULL;
 #pragma data_seg()
 #pragma comment(linker,"/section:MySec,RWS") //read write share
 
@@ -46,10 +48,22 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 LRESULT CALLBACK MouseProc(
 int nCode,WPARAM wParam,LPARAM lParam) 
 {
+	
 	if (wParam == WM_LBUTTONDOWN&& retModel)
 	{
 		retModel = false;
 		PostMessage(g_hWnd, WM_USER + 1, wParam, (LPARAM)&sCmdClear);
+
+	}
+	else if (wParam == WM_LBUTTONDOWN)
+	{
+		//hFocusWnd = GetFocus();
+		//string str = "233我我我我我我的的123";
+		//for (int i = 0; i <= str.size(); i++)
+		//{ // 
+		//	PostMessage(hFocusWnd, WM_CHAR, (WPARAM)(str[i] & 0xFF), 0);
+		//}
+
 
 	}
 
@@ -69,6 +83,8 @@ void SetMsgToDlg(string str)
 LRESULT CALLBACK KeyBoardProc(
 	int nCode, WPARAM wParam, LPARAM lParam)
 {
+	g_hFocusWnd = GetFocus();
+	//PostMessage(hFocusWnd, WM_CHAR, (WPARAM)('A'), 0);
 	//do nothing if is alt or shfit
 	if (18 == wParam&& retModel)
 	{
@@ -141,3 +157,9 @@ void SetHook(HWND hWnd, HHOOK &hKeyBoard, HHOOK &hMouse)
 	SetMsgToDlg("挂钩成功");
 	
 }
+
+void GetFocusHWND(HWND &hWnd)
+{
+	hWnd= g_hFocusWnd;
+}
+

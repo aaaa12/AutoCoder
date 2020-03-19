@@ -5,7 +5,8 @@ void  SpaceAndTabNum(string str,int& sNum,int &tNum)
 	tNum = 0;//tab count
 	while (' ' == str[p] || '	' == str[p])
 	{
-		    if (' ' == str[p])
+		    
+			if (' ' == str[p])
 			sNum++;
 		if ('	' == str[p])
 			tNum++;

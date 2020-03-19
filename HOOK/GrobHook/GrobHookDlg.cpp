@@ -14,9 +14,6 @@
 
 
 // CGrobHookDlg 对话框
-
-
-
 CGrobHookDlg::CGrobHookDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_GROBHOOK_DIALOG, pParent)
 {
@@ -34,6 +31,7 @@ BEGIN_MESSAGE_MAP(CGrobHookDlg, CDialogEx)
 	ON_MESSAGE(WM_SEND_TEXT2WIN, OnSendText2Win)
 	ON_BN_CLICKED(IDC_BTN_HOOK, &CGrobHookDlg::OnBnClickedBtnHook)
 	ON_WM_DESTROY()
+	ON_BN_CLICKED(IDC_BUTTON6, &CGrobHookDlg::OnBnClickedButton6)
 END_MESSAGE_MAP()
 
 
@@ -55,7 +53,7 @@ BOOL CGrobHookDlg::OnInitDialog()
 		m_pMsgDlg = new CMsgDlg();
 		m_pMsgDlg->Create(IDD_MSG, this);
 	}
-
+	bTypeMod = false;
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -95,17 +93,12 @@ HCURSOR CGrobHookDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-//原名引用
-_declspec(dllimport)  void SetHook(HWND hd,HHOOK &hKeyBoard, HHOOK &hMouse);
-
 void CGrobHookDlg::OnBnClickedBtnHook()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	SetHook(m_hWnd, g_hKeyBoard,g_hMouse);
+	SetHook(m_hWnd, g_hKeyBoard, g_hMouse);
 }
 
-//const char *noShift = "`1234567890-=";
-//const char * withShit=
 string cmd;
 string value;
 const char *withShift = "~!@#$%^&*()_+QWERTYUIOP{}|ASDFGHJKL:\"ZXCVBNM<> ?	";
@@ -136,8 +129,6 @@ char SwitchNoShift(char c)
 	return 0;
 }
 
-
-
 LRESULT CGrobHookDlg::OnSendText2Win(WPARAM wParam, LPARAM lParam)
 {
 
@@ -145,7 +136,7 @@ LRESULT CGrobHookDlg::OnSendText2Win(WPARAM wParam, LPARAM lParam)
 	{
 		if (VK_BACK == wParam)//key code of Backspace
 		{
-			if(value.size() > 0)
+			if (value.size() > 0)
 				value = value.substr(0, value.size() - 1);
 		}
 		else
@@ -162,28 +153,24 @@ LRESULT CGrobHookDlg::OnSendText2Win(WPARAM wParam, LPARAM lParam)
 					c = SwitchShift(c);
 				}
 			}
-
 			value = value + c;
-
 		}
-		if(!m_pMsgDlg->IsWindowVisible())
+		if (!m_pMsgDlg->IsWindowVisible())
 			m_pMsgDlg->ShowWindow(SW_SHOWNOACTIVATE);
 		m_pMsgDlg->SetTxt(value.c_str());
 	}
-	else    
-
-
+	else
 	{
 		cmd = *((string*)lParam);
 		if ("Clear" == cmd)
 		{
 			value = "";
-			if(m_pMsgDlg->IsWindowVisible())
+			if (m_pMsgDlg->IsWindowVisible())
 				m_pMsgDlg->ShowWindow(SW_HIDE);
 			m_pMsgDlg->SetTxt("");
 			return 0;
 		}
-		else if("Search" == cmd)
+		else if ("Search" == cmd)
 		{
 			if (m_pMsgDlg->IsWindowVisible())
 				m_pMsgDlg->ShowWindow(SW_HIDE);
@@ -192,14 +179,15 @@ LRESULT CGrobHookDlg::OnSendText2Win(WPARAM wParam, LPARAM lParam)
 
 			while (GetAsyncKeyState(18)) {};//wait for alt up
 
-
-			TypeTextFile(value);
-
+			if(bTypeMod)
+				TypeTextFile(value);
+			else
+			OutPutFile(value);
 			value = "";
 			return 0;
 		}
 	}
-		
+
 	return 0;
 }
 
@@ -213,7 +201,7 @@ bool CheckShift(char c, int &key)
 	}
 
 	//number line  1234567890
-	string s =    ")!@#$%^&*(";
+	string s = ")!@#$%^&*(";
 	for (int i = 0; i < 10; i++)
 	{
 		if (c == s[i])
@@ -239,7 +227,7 @@ bool CheckShift(char c, int &key)
 		}
 	}
 	string s2 = "{|}\"";
-	for (int i = 0; i < s2.size(); i++)	{
+	for (int i = 0; i < s2.size(); i++) {
 		if (c == s2[i])
 		{
 			key = i + 0xdb;
@@ -264,7 +252,7 @@ bool CheckNoShift(char c, int &key)
 		return true;
 	}
 
-	if (' '==c)
+	if (' ' == c)
 	{
 		key = c;
 		return true;
@@ -297,8 +285,8 @@ bool CheckNoShift(char c, int &key)
 	return false;
 
 }
-int WaitTime = 16;
 
+int WaitTime = 16;//interval time between two press
 void CGrobHookDlg::TypeStr(string str)
 {
 	//close caps lock 
@@ -327,7 +315,7 @@ void CGrobHookDlg::TypeStr(string str)
 			keybd_event(key, 0, 0, 0);
 			keybd_event(key, 0, KEYEVENTF_KEYUP, 0);
 		}
-		else//should be no other
+		else
 		{
 			keybd_event(str[i], 0, 0, 0);
 			keybd_event(str[i], 0, KEYEVENTF_KEYUP, 0);
@@ -346,9 +334,9 @@ void trim(string &s)
 	}
 }
 
-void  SpaceAndTabNum(string str,int& sNum,int &tNum)
+void  SpaceAndTabNum(string str, int& sNum, int &tNum)
 {
-	int p=0;
+	int p = 0;
 	sNum = 0;//space count
 	tNum = 0;//tab count
 	while (' ' == str[p] || '	' == str[p])
@@ -381,22 +369,108 @@ void CGrobHookDlg::TypeTextFile(string path)
 	}
 
 	string temp;
-	int sNum=0,tNum=0;
+
+	int sNum = 0, tNum = 0;
 	while (getline(myfile, temp)) //line by line call TypeStr
 	{
-		Sleep(100);
+			Sleep(100);
+			keybd_event(VK_RETURN, 0, 0, 0);
+			keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
+			TypeBackSpace(sNum + tNum);//delete space and tab int prior line begining
+			SpaceAndTabNum(temp, sNum, tNum);
+			TypeStr(temp);
 
-		keybd_event(VK_RETURN, 0, 0, 0);
-		keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
-		TypeBackSpace(sNum+ tNum);//delete space and tab int prior line begining
-		SpaceAndTabNum(temp, sNum, tNum);
-	
-		TypeStr(temp);
 		
+
 	}
 	myfile.close();
 }
 
+//void CGrobHookDlg::OutPutFile(string path)
+//{
+//	HWND hWnd = NULL;
+//	string str;
+//	GetFocusHWND(hWnd);
+//	if (NULL == hWnd)
+//	{
+//		TypeStr("no handle");
+//		return;
+//	}
+//
+//	ifstream fin;
+//	fin.open(path);
+//	if (!fin)
+//	{
+//		str = "no file";
+//		for (int i = 0; i <= str.size(); i++)
+//		{ // 
+//			::PostMessage(hWnd, WM_CHAR, (WPARAM)(str[i] & 0xFF), 0);
+//		}
+//		return;
+//	}
+//
+//	char ch;
+//	cin.unsetf(ios::skipws);
+//	//取消c++ cin输入流默认的忽略空白字符，也就是不再忽略空白字符       
+//	do
+//	{
+//		fin.get(ch);                
+//		::PostMessage(hWnd, WM_CHAR, (WPARAM)(ch & 0xFF), 0);
+//	} while (!fin.eof());
+//
+//}
+
+//要保存为ansi编码
+void CGrobHookDlg::OutPutFile(string path)
+{
+
+	HWND hWnd = NULL;
+	string str;
+	GetFocusHWND(hWnd);
+	if (NULL == hWnd)
+	{
+		TypeStr("no handle");
+		return;
+	}
+
+	FILE *pf = NULL; //文件指针
+	int filelen = 0;
+	int i = 0;
+	char *buf;
+	pf = fopen(path.c_str(), "r"); //以只读方式打开文件
+	if (pf == NULL)
+	{
+		//return 0;
+	}
+	else
+	{
+		//获得文件长度
+		fseek(pf, 0, SEEK_END); //文件指针移到末尾
+		filelen = ftell(pf); //获得文件当前指针位置，即为文件长度
+		rewind(pf); //将文件指针移到开头，准备读取
+		buf = (char*)malloc(filelen + 1); //新建缓冲区，存储独处的数据
+		//将缓冲区的数据设置为0
+		for (i = 0; i < filelen + 1; i++)
+			buf[i] = 0;
+		//读取文件
+		fread(buf, filelen, 1, pf);
+		//关闭文件
+		fclose(pf);
+		//buf中即为要读出的数据
+		int p = 0;
+		CString str;
+		str.Format("%s",buf);
+		//MessageBox(str);
+		while (buf[p]!=0)
+		{  
+			::PostMessage(hWnd, WM_CHAR, (WPARAM)(buf[p] & 0xFF), 0);
+			p++;
+		} 
+
+		free(buf); //最后记得要释放
+	}
+
+}
 void CGrobHookDlg::OnDestroy()
 {
 	CDialogEx::OnDestroy();
@@ -411,4 +485,34 @@ void CGrobHookDlg::OnDestroy()
 	}
 	UnhookWindowsHookEx(g_hKeyBoard);
 	UnhookWindowsHookEx(g_hMouse);
+}
+
+
+void CGrobHookDlg::OnBnClickedButton6()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	Sleep(5000);
+
+	HWND hWnd;
+	GetFocusHWND(hWnd);
+
+	string str = "233大些中文123";
+	for (int i = 0; i <= str.size(); i++)
+	{ // 
+		::PostMessage(hWnd, WM_CHAR, (WPARAM)(str[i] & 0xFF), 0);
+	}
+	//CWnd *pWnd= GetForegroundWindow();
+	//CString cstr;
+	//
+	//CWnd *pfWnd =pWnd->GetFocus();
+	//pfWnd->GetWindowText(cstr);
+	//MessageBox(cstr);
+	//HWND hWnd = ::GetForegroundWindow(); // 得到当前窗口  
+
+	//string str = "233大些中文123";
+	//for (int i = 0; i <= str.size(); i++)
+	//{ // 
+	//	pfWnd->PostMessage( WM_CHAR, (WPARAM)(str[i] & 0xFF), 0);
+	//}
+
 }
