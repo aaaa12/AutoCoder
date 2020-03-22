@@ -1,4 +1,4 @@
-LIBRARY Dll1
+LIBRARY HookDll
 EXPORTS
 SetHook @1
-GetFocusHWND @2
+GetFocusWnd @2

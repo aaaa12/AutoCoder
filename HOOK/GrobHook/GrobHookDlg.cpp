@@ -7,7 +7,9 @@
 #include "GrobHook.h"
 #include "GrobHookDlg.h"
 #include "afxdialogex.h"
-
+#include <vector>
+#include <io.h>
+using namespace std;
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -16,6 +18,7 @@
 // CGrobHookDlg 对话框
 CGrobHookDlg::CGrobHookDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_GROBHOOK_DIALOG, pParent)
+	, m_iMod(0)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -23,15 +26,22 @@ CGrobHookDlg::CGrobHookDlg(CWnd* pParent /*=nullptr*/)
 void CGrobHookDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Radio(pDX, IDC_RADIO1, m_iMod);
 }
 
 BEGIN_MESSAGE_MAP(CGrobHookDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_MESSAGE(WM_SEND_TEXT2WIN, OnSendText2Win)
+	ON_MESSAGE(WM_SEND_LOG, OnSendLog)
 	ON_BN_CLICKED(IDC_BTN_HOOK, &CGrobHookDlg::OnBnClickedBtnHook)
 	ON_WM_DESTROY()
-	ON_BN_CLICKED(IDC_BUTTON6, &CGrobHookDlg::OnBnClickedButton6)
+	ON_BN_CLICKED(IDOK, &CGrobHookDlg::OnBnClickedOk)
+	ON_BN_CLICKED(IDC_RADIO1, &CGrobHookDlg::OnBnClickedRadio)
+	ON_BN_CLICKED(IDC_RADIO2, &CGrobHookDlg::OnBnClickedRadio)
+	ON_BN_CLICKED(IDC_RADIO3, &CGrobHookDlg::OnBnClickedRadio)
+	ON_BN_CLICKED(IDC_RADIO4, &CGrobHookDlg::OnBnClickedRadio)
+	ON_BN_CLICKED(IDC_BUTTON1, &CGrobHookDlg::OnBnClickedButton1)
 END_MESSAGE_MAP()
 
 
@@ -53,7 +63,17 @@ BOOL CGrobHookDlg::OnInitDialog()
 		m_pMsgDlg = new CMsgDlg();
 		m_pMsgDlg->Create(IDD_MSG, this);
 	}
-	bTypeMod = false;
+	
+	iRetMod = 1;
+	SetHook(m_hWnd, g_hKeyBoard, g_hMouse);
+	ShowLog("运行中..");
+	CString str;
+	::GetPrivateProfileString("RADIO", "OutPutModel", 
+		CString("NULL"), str.GetBuffer(MAX_PATH), MAX_PATH, "setting.ini");
+
+	m_iMod = atoi(str.GetBuffer());
+	iOldMod = m_iMod;
+	UpdateData(false);
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -63,10 +83,9 @@ BOOL CGrobHookDlg::OnInitDialog()
 
 void CGrobHookDlg::OnPaint()
 {
-	if (IsIconic())
+	CPaintDC dc(this); // 用于绘制的设备上下文
+	if (IsIconic())//IsIconic()作用是判断窗口是否处于最小化状态
 	{
-		CPaintDC dc(this); // 用于绘制的设备上下文
-
 		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
 
 		// 使图标在工作区矩形中居中
@@ -82,6 +101,29 @@ void CGrobHookDlg::OnPaint()
 	}
 	else
 	{
+
+		//输出日志
+		TEXTMETRIC tm;
+		dc.GetTextMetrics(&tm);
+		int iTxtHight = tm.tmHeight;
+		//不超过10个从第一个输出
+		if (iLogPos < 10)
+		{
+			for (int i = 0; i < 10; i++)
+			{
+				//从iLogSize开始
+				dc.TextOut(0, iTxtHight*i, sLog[i]);
+			}
+		}
+		else {
+			//超过十个从插入处后一个做环
+			for (int i = 0; i < 10; i++)
+			{
+				//从iLogSize开始
+				dc.TextOut(0, iTxtHight*i, sLog[(iLogPos + i) % 10]);
+			}
+		}
+
 		CDialogEx::OnPaint();
 	}
 }
@@ -99,14 +141,7 @@ void CGrobHookDlg::OnBnClickedBtnHook()
 	SetHook(m_hWnd, g_hKeyBoard, g_hMouse);
 }
 
-string cmd;
-string value;
-const char *withShift = "~!@#$%^&*()_+QWERTYUIOP{}|ASDFGHJKL:\"ZXCVBNM<> ?	";
-const char   *noShift = "`1234567890-=qwertyuiop[]\\asdfghjkl;'zxcvbnm,. /	";
-
-const char *AwithShift = "QWERTYUIOPASDFGHJKLZXCVBNM";
-const char   *AnoShift = "qwertyuiopasdfghjklzxcvbnm";
-char SwitchShift(char c)
+char CGrobHookDlg::SwitchShift(char c)
 {
 	int p = 0;
 	while (0 != noShift[p])
@@ -117,7 +152,7 @@ char SwitchShift(char c)
 	}
 	return 0;
 }
-char SwitchNoShift(char c)
+char CGrobHookDlg::SwitchNoShift(char c)
 {
 	int p = 0;
 	while (0 != AwithShift[p])
@@ -127,6 +162,39 @@ char SwitchNoShift(char c)
 		p++;
 	}
 	return 0;
+
+}
+vector<string> split(string str, string pattern)
+{
+	int pos;
+	vector<string> result;
+	str += pattern;//扩展字符串以方便操作
+	int size = str.size();
+
+	for (int i = 0; i < size; i++)
+	{
+		pos = str.find(pattern, i);
+		if (pos < size)
+		{
+			string s = str.substr(i, pos - i);
+			result.push_back(s);
+			i = pos + pattern.size() - 1;
+		}
+	}
+	return result;
+}
+
+string UpperCase(string &str)
+{
+	int off = 'A' - 'a';
+	for (int i=0;i<str.size();i++)
+	{
+		if ('a' <= str[i] && str[i] <= 'z')
+		{
+			str[i] += off;
+		}
+	}
+	return str;
 }
 
 LRESULT CGrobHookDlg::OnSendText2Win(WPARAM wParam, LPARAM lParam)
@@ -155,44 +223,81 @@ LRESULT CGrobHookDlg::OnSendText2Win(WPARAM wParam, LPARAM lParam)
 			}
 			value = value + c;
 		}
-		if (!m_pMsgDlg->IsWindowVisible())
-			m_pMsgDlg->ShowWindow(SW_SHOWNOACTIVATE);
-		m_pMsgDlg->SetTxt(value.c_str());
+		m_pMsgDlg->SetTxt(value.c_str(), true);
 	}
 	else
 	{
-		cmd = *((string*)lParam);
-		if ("Clear" == cmd)
+		CString stmp;
+		if (HOOK_CMD_SHOW == lParam)
+		{
+			m_pMsgDlg->SetTxt("", true);
+
+		}
+		else if (HOOK_CMD_CLEAR == lParam)
 		{
 			value = "";
-			if (m_pMsgDlg->IsWindowVisible())
-				m_pMsgDlg->ShowWindow(SW_HIDE);
-			m_pMsgDlg->SetTxt("");
+			m_pMsgDlg->SetTxt("", false);
 			return 0;
 		}
-		else if ("Search" == cmd)
+		else if (HOOK_CMD_SUBMIT == lParam)
 		{
-			if (m_pMsgDlg->IsWindowVisible())
-				m_pMsgDlg->ShowWindow(SW_HIDE);
-			m_pMsgDlg->SetTxt("");
-			value = value + ".txt";
+			
+			if ('-' == value[0])
+			{
+				//拆
+				stmp.Format("执行:%s", value.c_str());
+				ShowLog(stmp);
+				vector<string> v= split(value," ");
+				if ("-SAVE" == UpperCase(v[0]) && "CLIP" == UpperCase(v[1]))//-SAVE CLIP [filepath]
+				{
+					stmp.Format("%s.txt", v[2].c_str());
+					SaveStrToFile(stmp,GetClipBoradText());
+					ShowLog("执行完成");
+				}
+				else 
+				{
+					ShowLog("解析失败");
+				}
 
-			while (GetAsyncKeyState(18)) {};//wait for alt up
+			}
+			else//
+			{
+				CString fileName;
+				fileName.Format("获取文件%s.txt", value);
+		
+				while (GetAsyncKeyState(18)) {};//wait for alt up
 
-			if(bTypeMod)
-				TypeTextFile(value);
-			else
-			OutPutFile(value);
+				if (1== m_iMod )
+					TypeTextFile(fileName);
+				else if(2== m_iMod )
+					OutPutFile(fileName);
+				else if(3== m_iMod )
+					FileToClip(fileName);
+				value = "";
+			}
+			m_pMsgDlg->SetTxt("", false);
 			value = "";
-			return 0;
 		}
 	}
 
 	return 0;
 }
 
+LRESULT CGrobHookDlg::OnSendLog(WPARAM wParam, LPARAM lParam)
+{
+
+	if (lParam != 0)
+	{
+		char *c = (char *)lParam;
+		CString str;
+		str.Format("%s",c);
+		ShowLog(str);
+	}
+
+	return 0;
+}
 //no shift type value
-bool CheckShift(char c, int &key)
+bool CGrobHookDlg::CheckShift(char c, int &key)
 {
 	if ('A' <= c && c <= 'Z')
 	{
@@ -200,7 +305,7 @@ bool CheckShift(char c, int &key)
 		return true;
 	}
 
-	//number line  1234567890
+	//number line  0123456789
 	string s = ")!@#$%^&*(";
 	for (int i = 0; i < 10; i++)
 	{
@@ -237,8 +342,8 @@ bool CheckShift(char c, int &key)
 
 	return false;
 }
-const int offset = 'A' - 'a';
-bool CheckNoShift(char c, int &key)
+
+bool CGrobHookDlg::CheckNoShift(char c, int &key)
 {
 	if ('a' <= c && c <= 'z')
 	{
@@ -286,8 +391,7 @@ bool CheckNoShift(char c, int &key)
 
 }
 
-int WaitTime = 16;//interval time between two press
-void CGrobHookDlg::TypeStr(string str)
+void CGrobHookDlg::TypeStr(CString str)
 {
 	//close caps lock 
 	BYTE btKeyState[256];
@@ -299,7 +403,7 @@ void CGrobHookDlg::TypeStr(string str)
 	}
 
 	int key;
-	for (int i = 0; i < str.size(); i++)
+	for (int i = 0; i < str.GetLength(); i++)
 	{
 
 		Sleep(WaitTime);
@@ -323,9 +427,7 @@ void CGrobHookDlg::TypeStr(string str)
 	}
 }
 
-
-
-void trim(string &s)
+void CGrobHookDlg::TrimStr(string &s)
 {
 	if (!s.empty())
 	{
@@ -334,7 +436,7 @@ void trim(string &s)
 	}
 }
 
-void  SpaceAndTabNum(string str, int& sNum, int &tNum)
+void CGrobHookDlg::SpaceAndTabNum(string str, int& sNum, int &tNum)
 {
 	int p = 0;
 	sNum = 0;//space count
@@ -348,7 +450,7 @@ void  SpaceAndTabNum(string str, int& sNum, int &tNum)
 		p++;
 	}
 }
-void TypeBackSpace(int times)
+void CGrobHookDlg::TypeKeyBackSpace(int times)
 {
 	for (int i = 0; i < times; i++)
 	{
@@ -357,120 +459,159 @@ void TypeBackSpace(int times)
 		keybd_event(VK_BACK, 0, KEYEVENTF_KEYUP, 0);
 	}
 }
-void CGrobHookDlg::TypeTextFile(string path)
+
+void CGrobHookDlg::TypeKeyEnter(string proLine)
+{
+	int sNum, tNum;
+	SpaceAndTabNum(proLine, sNum, tNum);//前几行有tab，回车会自动对齐，所以回车后要先删除自动对齐加的tab
+	keybd_event(VK_RETURN, 0, 0, 0);
+	keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
+	for (int i = 0; i < tNum; i++)
+	{
+		Sleep(WaitTime);
+		keybd_event(VK_BACK, 0, 0, 0);
+		keybd_event(VK_BACK, 0, KEYEVENTF_KEYUP, 0);
+	}
+}
+
+void CGrobHookDlg::TypeTextFile(CString path)
 {
 	ifstream myfile(path);
 
 	if (!myfile.good())
 	{
 		TypeStr("no file");
+		ShowLog("路径错误");
 		myfile.close();
 		return;
 	}
 
-	string temp;
+	string oldLine, line;
 
 	int sNum = 0, tNum = 0;
-	while (getline(myfile, temp)) //line by line call TypeStr
+	while (getline(myfile, line)) //line by line call TypeStr
 	{
-			Sleep(100);
-			keybd_event(VK_RETURN, 0, 0, 0);
-			keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
-			TypeBackSpace(sNum + tNum);//delete space and tab int prior line begining
-			SpaceAndTabNum(temp, sNum, tNum);
-			TypeStr(temp);
-
-		
-
+		Sleep(50);
+		TypeKeyEnter(oldLine.c_str());
+		TypeStr(line.c_str());
+		oldLine = line;
 	}
 	myfile.close();
 }
 
-//void CGrobHookDlg::OutPutFile(string path)
-//{
-//	HWND hWnd = NULL;
-//	string str;
-//	GetFocusHWND(hWnd);
-//	if (NULL == hWnd)
-//	{
-//		TypeStr("no handle");
-//		return;
-//	}
-//
-//	ifstream fin;
-//	fin.open(path);
-//	if (!fin)
-//	{
-//		str = "no file";
-//		for (int i = 0; i <= str.size(); i++)
-//		{ // 
-//			::PostMessage(hWnd, WM_CHAR, (WPARAM)(str[i] & 0xFF), 0);
-//		}
-//		return;
-//	}
-//
-//	char ch;
-//	cin.unsetf(ios::skipws);
-//	//取消c++ cin输入流默认的忽略空白字符，也就是不再忽略空白字符       
-//	do
-//	{
-//		fin.get(ch);                
-//		::PostMessage(hWnd, WM_CHAR, (WPARAM)(ch & 0xFF), 0);
-//	} while (!fin.eof());
-//
-//}
-
-//要保存为ansi编码
-void CGrobHookDlg::OutPutFile(string path)
+//txt文件要保存为ansi编码
+void CGrobHookDlg::OutPutFile(CString path)
 {
 
 	HWND hWnd = NULL;
 	string str;
-	GetFocusHWND(hWnd);
+	GetFocusWnd(hWnd);
 	if (NULL == hWnd)
 	{
 		TypeStr("no handle");
+		ShowLog("未获取句柄");
 		return;
 	}
-
-	FILE *pf = NULL; //文件指针
-	int filelen = 0;
-	int i = 0;
-	char *buf;
-	pf = fopen(path.c_str(), "r"); //以只读方式打开文件
-	if (pf == NULL)
+	if (1 == iRetMod)
 	{
-		//return 0;
+		ifstream myfile(path);
+
+		if (!myfile.good())
+		{
+			TypeStr("no file");
+			ShowLog("路径错误");
+			myfile.close();
+			return;
+		}
+
+		string proline, line;
+
+		int sNum = 0, tNum = 0;
+		while (getline(myfile, line)) //line by line call TypeStr
+		{
+			Sleep(50);
+			TypeKeyEnter(proline);
+
+			int p = 0;
+			while (line[p] != 0)
+			{
+				::PostMessage(hWnd, WM_CHAR, (WPARAM)(line[p] & 0xFF), 0);
+				p++;
+			}
+			proline = line;
+		}
+		myfile.close();
 	}
 	else
 	{
-		//获得文件长度
-		fseek(pf, 0, SEEK_END); //文件指针移到末尾
-		filelen = ftell(pf); //获得文件当前指针位置，即为文件长度
-		rewind(pf); //将文件指针移到开头，准备读取
-		buf = (char*)malloc(filelen + 1); //新建缓冲区，存储独处的数据
-		//将缓冲区的数据设置为0
-		for (i = 0; i < filelen + 1; i++)
-			buf[i] = 0;
-		//读取文件
-		fread(buf, filelen, 1, pf);
-		//关闭文件
-		fclose(pf);
-		//buf中即为要读出的数据
-		int p = 0;
-		CString str;
-		str.Format("%s",buf);
-		//MessageBox(str);
-		while (buf[p]!=0)
-		{  
-			::PostMessage(hWnd, WM_CHAR, (WPARAM)(buf[p] & 0xFF), 0);
-			p++;
-		} 
+		FILE *pf = NULL;
+		int filelen = 0;
+		int i = 0;
+		char *buf;
+		pf = fopen(path, "r");
+		if (pf == NULL)
+		{
+			TypeStr("no file");
+			ShowLog("路径错误");
+			return;
+		}
+		else
+		{
+			fseek(pf, 0, SEEK_END);
+			filelen = ftell(pf);
+			rewind(pf);
+			buf = (char*)malloc(filelen + 1);
+			for (i = 0; i < filelen + 1; i++)
+				buf[i] = 0;
 
-		free(buf); //最后记得要释放
+			fread(buf, filelen, 1, pf);
+
+			fclose(pf);
+
+			int p = 0;
+			while (buf[p] != 0)
+			{
+				::PostMessage(hWnd, WM_CHAR, (WPARAM)(buf[p] & 0xFF), 0);
+				p++;
+			}
+
+			free(buf); //最后记得要释放
+		}
 	}
-
 }
+
+void CGrobHookDlg::FileToClip(CString path)
+{
+	FILE *pf = NULL;
+	int filelen = 0;
+	int i = 0;
+	HGLOBAL clipbuffer;
+	char * buffer;
+	pf = fopen(path, "r");
+	if (pf == NULL)
+	{
+		TypeStr("no file");
+		ShowLog("路径错误");
+		return;
+	};
+-
+	fseek(pf, 0, SEEK_END);
+	
+	if (OpenClipboard())
+	{
+		filelen = ftell(pf);
+		rewind(pf);
+		EmptyClipboard();
+		clipbuffer = GlobalAlloc(GMEM_DDESHARE, filelen + 1);
+		fread(clipbuffer, filelen, 1, pf);
+
+		GlobalUnlock(clipbuffer);
+		SetClipboardData(CF_TEXT, clipbuffer);
+		CloseClipboard();
+	}
+	fclose(pf);
+}
+
 void CGrobHookDlg::OnDestroy()
 {
 	CDialogEx::OnDestroy();
@@ -488,31 +629,158 @@ void CGrobHookDlg::OnDestroy()
 }
 
 
-void CGrobHookDlg::OnBnClickedButton6()
+
+CString CGrobHookDlg::GetClipBoradText()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	Sleep(5000);
-
-	HWND hWnd;
-	GetFocusHWND(hWnd);
-
-	string str = "233大些中文123";
-	for (int i = 0; i <= str.size(); i++)
-	{ // 
-		::PostMessage(hWnd, WM_CHAR, (WPARAM)(str[i] & 0xFF), 0);
+	char * buffer = NULL;
+	//open the clipboard
+	CString fromClipboard;
+	if (OpenClipboard())
+	{
+		HANDLE hData = GetClipboardData(CF_TEXT);
+		if (0 == hData)
+			return "";
+		char * buffer = (char*)GlobalLock(hData);
+		fromClipboard.Format("%s",buffer);
+		GlobalUnlock(hData);
+		CloseClipboard();
 	}
-	//CWnd *pWnd= GetForegroundWindow();
-	//CString cstr;
-	//
-	//CWnd *pfWnd =pWnd->GetFocus();
-	//pfWnd->GetWindowText(cstr);
-	//MessageBox(cstr);
-	//HWND hWnd = ::GetForegroundWindow(); // 得到当前窗口  
+	return fromClipboard;
+}
 
-	//string str = "233大些中文123";
-	//for (int i = 0; i <= str.size(); i++)
-	//{ // 
-	//	pfWnd->PostMessage( WM_CHAR, (WPARAM)(str[i] & 0xFF), 0);
-	//}
+void CGrobHookDlg::ShowLog(CString str)
+{
+	CClientDC dc(this);
+
+
+	SYSTEMTIME sys;
+	GetLocalTime(&sys);
+	CString fileName;
+	CString logTime;
+	fileName.Format("log/%4d-%02d-%02d_log.txt", sys.wYear, sys.wMonth, sys.wDay);
+	logTime.Format("[%4d/%02d/%02d %02d:%02d:%02d]:", sys.wYear, sys.wMonth, sys.wDay, sys.wHour, sys.wMinute, sys.wSecond);
+	
+	sLog[(iLogPos++) % 10] = logTime+str;
+
+	Invalidate(true);
+
+	//保存到文件
+	FILE *stream;//创建一个文件的指针
+	char ch[] = " ";
+	stream = fopen(fileName, "a");
+	fprintf(stream, "%s\n", logTime + str);
+	fclose(stream);
+}
+
+void CGrobHookDlg::SaveStrToFile(CString fileName, CString str)
+{
+	if ("" == str)
+		return;
+
+	FILE *pt = NULL;
+	CString path = GetFilePath(fileName);
+	MakeDir(path);
+
+	pt = fopen(fileName, "w");
+	fprintf(pt, "%s", str);
+	fclose(pt);
+}
+CString CGrobHookDlg::ReadStrFromFile(CString path)
+{
+	CString ret;
+	char * buffer;	
+	FILE * f;	
+	long length;	
+	//以二进制形式打开文件	
+	f = fopen(path, "rb");
+	if (NULL == f)	
+	{		
+		return ret;
+	}	
+	//把文件的位置指针移到文件尾	
+	fseek(f, 0, SEEK_END);	
+	//获取文件长度;	
+	length = ftell(f);	
+	//把文件的位置指针移到文件开头	
+	fseek(f, 0, SEEK_SET);	
+	buffer = (char *)malloc((length + 1) * sizeof(char));
+	fread(buffer, 1, length, f);
+	buffer[length] = '\0';	
+	fclose(f);
+	ret.Format("%s", buffer);
+
+	free(buffer);
+
+	return ret;
+}
+
+
+void CGrobHookDlg::OnBnClickedOk()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	UpdateData(true);
+	CString str;
+	str.Format("%d", m_iMod);
+	MessageBox(str);
+	//CDialogEx::OnOK();
+}
+
+void CGrobHookDlg::OnBnClickedRadio()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	UpdateData(true);
+
+	//no change
+	if (iOldMod == m_iMod)
+		return;
+
+	iOldMod = m_iMod;
+	CString str;
+	str.Format("%d", m_iMod);
+    ::WritePrivateProfileString("RADIO", "OutPutModel", str, "setting.ini");
+
+	switch (m_iMod) {
+	case 0:
+		str = "隐藏模式（未完成）";
+		break;
+	case 1:
+		str = "模拟键盘";
+		break;
+	case 2:
+		str = "消息输出";
+		break;
+	case 3:
+		str = "剪切板";
+		break;
+	default:
+		str = "未知";
+		break;
+	}
+	ShowLog("切换模式->" + str);
+}
+
+
+void CGrobHookDlg::OnBnClickedButton1()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	MakeDir("c\\cc\\cca");
+}
+
+void CGrobHookDlg::MakeDir(CString path)
+{
+	if (-1 == _access(path, 0))
+	{
+		CString cmd = "mkdir " + path;
+		system(cmd);
+	}
+}
+
+CString CGrobHookDlg::GetFilePath(CString fileName)
+{
+	int pos = fileName.ReverseFind('\\');
+	CString path = fileName.Left(pos);
+	return path;
+
 
 }

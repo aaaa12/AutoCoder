@@ -1,22 +1,18 @@
 ﻿// dllmain.cpp : 定义 DLL 应用程序的入口点。
 #include "pch.h"
-#include<windows.h>
-#include <stdio.h>
-#include <fstream>
-#include <cassert>
+#include "HookDll.h"
 
-#include <bits/stdc++.h>
-using namespace std;
+
 
 HHOOK g_hMouse = NULL;
 HHOOK g_hKeyBoard = NULL;
 HINSTANCE g_hInst = NULL;
-bool retModel = false;//retrun model
 clock_t rtm;//retModel time
 clock_t ct_old;//time 
 clock_t ct_new;//time 
-string sCmdClear = "Clear";
-string sCmdSearch = "Search";
+string state = "off";
+WPARAM wOldParam;
+
 
 //长度不超过8,这样，在其他线程中也能调用这个窗口
 #pragma data_seg("MySec")
@@ -44,75 +40,53 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 	return TRUE;
 }
 
+void SetMsgToDlg(string str)
+{
+	char *c = new char[str.size() + 1];
+	sprintf(c, "%s", str.c_str());
+	c[str.size()] = 0;
+	SendMessage(g_hWnd, WM_SEND_LOG, 0, (LPARAM)c);
+	delete[] c;
+}
 
 LRESULT CALLBACK MouseProc(
 int nCode,WPARAM wParam,LPARAM lParam) 
 {
 	
-	if (wParam == WM_LBUTTONDOWN&& retModel)
+	if ("on"== state &&wParam == WM_LBUTTONDOWN)
 	{
-		retModel = false;
-		PostMessage(g_hWnd, WM_USER + 1, wParam, (LPARAM)&sCmdClear);
+
+		SetMsgToDlg("结束命令，原因：鼠标点击");
+		state = "off";
+		PostMessage(g_hWnd, WM_SEND_TEXT2WIN, wParam, HOOK_CMD_CLEAR);
 
 	}
-	else if (wParam == WM_LBUTTONDOWN)
-	{
-		//hFocusWnd = GetFocus();
-		//string str = "233我我我我我我的的123";
-		//for (int i = 0; i <= str.size(); i++)
-		//{ // 
-		//	PostMessage(hFocusWnd, WM_CHAR, (WPARAM)(str[i] & 0xFF), 0);
-		//}
-
-
-	}
-
-	return CallNextHookEx(g_hMouse, nCode, wParam, lParam);;
+	return CallNextHookEx(g_hMouse, nCode, wParam, lParam);
 }
 
-void SetMsgToDlg(string str)
-{
-	HDC hdc = GetDC(g_hWnd);
-	char buf[20];
-	memset(buf, 0, 20);
-	TextOut(hdc, 0, 0, str.c_str(), strlen(str.c_str()));
-	ReleaseDC(g_hWnd, hdc);
-}
 
 
 LRESULT CALLBACK KeyBoardProc(
 	int nCode, WPARAM wParam, LPARAM lParam)
 {
+	if (lParam & 0x80000000)//31判断按下还是弹起，这里只处理按下
+	{
+		return CallNextHookEx(g_hKeyBoard, nCode, wParam, lParam);
+	}
+
+	//每次键盘事件更新当前输入的句柄，只有在这才能正确获取当前句柄，因为调用该函数是当前进程
 	g_hFocusWnd = GetFocus();
-	//PostMessage(hFocusWnd, WM_CHAR, (WPARAM)('A'), 0);
+
+
 	//do nothing if is alt or shfit
-	if (18 == wParam&& retModel)
+	//命令获取时，屏蔽alt，避免触发当前应用的快捷菜单
+	if (18 == wParam&& "on"==state)
 	{
 		return 1;
 	}
-		
-	if (VK_SHIFT == wParam)
-	{
-		return  CallNextHookEx(g_hKeyBoard, nCode, wParam, lParam);
-	}
 
-	//time check
-	ct_new = clock();
-	if (ct_new - ct_old < 200)
-	{
-		if (retModel)
-			return 1;
-		else
-		    return  CallNextHookEx(g_hKeyBoard, nCode, wParam, lParam);
-	}
-	ct_old = clock();
 
-	//if (clock() - rtm>30000) //time out
-	//{
-	//	retModel = false;
-	//	SendMessage(g_hWnd, WM_USER + 1, wParam, (LPARAM) &sCmdClear);
-	//	return  CallNextHookEx(g_hKeyBoard, nCode, wParam, lParam);
-	//}
+	
 
 	if (VK_F2 == wParam)//F2关闭
 	{
@@ -120,29 +94,31 @@ LRESULT CALLBACK KeyBoardProc(
 		UnhookWindowsHookEx(g_hKeyBoard);
 		return 1;
 	}
-	else if (1 == (lParam >> 29 & 1) && ('1' == wParam))//alt+1
+	else if ("off"==state && 1 == (lParam >> 29 & 1) && ('1' == wParam))//alt+1
 	{
 		rtm= clock();
-		SetMsgToDlg("读取命令");
-		retModel = true;
+		SetMsgToDlg("接收命令...");
+		state = "on";
+		PostMessage(g_hWnd, WM_SEND_TEXT2WIN, wParam, HOOK_CMD_SHOW);
+
 		return  1;
 	}
-	else if (retModel &&1 == (lParam >> 29 & 1) && ('2' == wParam))//alt+2
+	else if ("on"== state && 1 == (lParam >> 29 & 1) && ('2' == wParam))//alt+2
 	{
-		retModel = false;
-		SetMsgToDlg("执行命令");
-		PostMessage(g_hWnd, WM_USER + 1, wParam, (LPARAM)&sCmdSearch);
+
+		SetMsgToDlg("提交命令...");
+		state = "off";
+		PostMessage(g_hWnd, WM_SEND_TEXT2WIN, wParam, HOOK_CMD_SUBMIT);
 		return 1;
 	}
-	else if (retModel)//非alt
+	else if ("on" == state && 0 == (lParam >> 29 & 1))//非alt
 	{
-		PostMessage(g_hWnd, WM_USER + 1, wParam, 0);//错误记录：本来是sendMessage的，会导致编辑器一直等待输入而卡死。
+		PostMessage(g_hWnd, WM_SEND_TEXT2WIN, wParam, 0);//错误记录：本来是sendMessage的，会导致编辑器一直等待输入而卡死。
 		return  1;
-	}
-	else
-	{
-		return  CallNextHookEx(g_hKeyBoard, nCode, wParam, lParam);
-	}
+	};
+	
+	return  CallNextHookEx(g_hKeyBoard, nCode, wParam, lParam);
+	
 
 }
 void SetHook(HWND hWnd, HHOOK &hKeyBoard, HHOOK &hMouse)
@@ -158,7 +134,7 @@ void SetHook(HWND hWnd, HHOOK &hKeyBoard, HHOOK &hMouse)
 	
 }
 
-void GetFocusHWND(HWND &hWnd)
+void GetFocusWnd(HWND &hWnd)
 {
 	hWnd= g_hFocusWnd;
 }

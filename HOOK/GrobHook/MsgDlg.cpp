@@ -34,12 +34,12 @@ END_MESSAGE_MAP()
 
 // CMsgDlg 消息处理程序
 
-void CMsgDlg::SetTxt(CString str)
+void CMsgDlg::SetTxt(CString str,bool bShow)
 {
-	m_edit.SetWindowTextA(str);
 
+	m_edit.SetWindowText(str);
 	CDC* pDC = m_edit.GetDC();
-	m_edit.SetWindowTextA(str);
+
 	CSize size = pDC->GetTextExtent(str);
 	m_edit.ReleaseDC(pDC);
 	CRect rc;
@@ -50,6 +50,12 @@ void CMsgDlg::SetTxt(CString str)
 		rc.right = 20;
 	if(rc.right > 220)
 		rc.right = rc.right*9/10;
+	
 	MoveWindow(rc);
 	m_edit.MoveWindow(rc);
+	GetWindowRect(rc);
+	if(bShow)
+		::SetWindowPos(m_hWnd, HWND_TOPMOST, rc.left, rc.top, rc.Width(), rc.Height(), SWP_SHOWWINDOW);
+	else
+		::SetWindowPos(m_hWnd, HWND_TOPMOST, rc.left, rc.top, rc.Width(), rc.Height(), SWP_HIDEWINDOW);
 }

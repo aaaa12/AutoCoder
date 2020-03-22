@@ -10,7 +10,7 @@ class CMsgDlg : public CDialogEx
 public:
 	CMsgDlg(CWnd* pParent = nullptr);   // 标准构造函数
 	virtual ~CMsgDlg();
-	void SetTxt(CString str);
+	void SetTxt(CString str, bool bShow);
 // 对话框数据
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_MSG };
