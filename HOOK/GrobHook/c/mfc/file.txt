@@ -1,0 +1,6 @@
+{	buffer  (char *)malloc((length + 1) * sizeof(char));
+	fread(buffer, 1, length, f);
+	buffer[length] = '\0';
+	fclose(f);
+	ret.Format("%s", buffer);
+}

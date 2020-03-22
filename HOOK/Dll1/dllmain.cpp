@@ -20,7 +20,7 @@ HWND g_hWnd = NULL;//一定要初始化化
 HWND g_hFocusWnd = NULL;
 #pragma data_seg()
 #pragma comment(linker,"/section:MySec,RWS") //read write share
-
+char *logBuffer;
 BOOL APIENTRY DllMain(HMODULE hModule,
 	DWORD  ul_reason_for_call,
 	LPVOID lpReserved
@@ -28,7 +28,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 {
 	g_hInst = hModule;
 	//或者 GetModuleHandle
-
+	logBuffer = new char[1024];
 	switch (ul_reason_for_call)
 	{
 	case DLL_PROCESS_ATTACH:
@@ -42,25 +42,22 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 
 void SetMsgToDlg(string str)
 {
-	char *c = new char[str.size() + 1];
-	sprintf(c, "%s", str.c_str());
-	c[str.size()] = 0;
-	SendMessage(g_hWnd, WM_SEND_LOG, 0, (LPARAM)c);
-	delete[] c;
+	sprintf(logBuffer, "%s", str.c_str());
+	SendMessage(g_hWnd, WM_SEND_LOG, 0, (LPARAM)logBuffer);
 }
 
 LRESULT CALLBACK MouseProc(
 int nCode,WPARAM wParam,LPARAM lParam) 
 {
 	
-	if ("on"== state &&wParam == WM_LBUTTONDOWN)
-	{
+	//if ("on"== state &&wParam == WM_LBUTTONDOWN)
+	//{
 
-		SetMsgToDlg("结束命令，原因：鼠标点击");
-		state = "off";
-		PostMessage(g_hWnd, WM_SEND_TEXT2WIN, wParam, HOOK_CMD_CLEAR);
+	//	SetMsgToDlg("结束命令，原因：鼠标点击");
+	//	state = "off";
+	//	PostMessage(g_hWnd, WM_SEND_TEXT2WIN, wParam, HOOK_CMD_CLEAR);
 
-	}
+	//}
 	return CallNextHookEx(g_hMouse, nCode, wParam, lParam);
 }
 
@@ -80,14 +77,11 @@ LRESULT CALLBACK KeyBoardProc(
 
 	//do nothing if is alt or shfit
 	//命令获取时，屏蔽alt，避免触发当前应用的快捷菜单
-	if (18 == wParam&& "on"==state)
+	if ((18 == wParam|| VK_SHIFT == wParam)&& "on"==state)
 	{
-		return 1;
+		return 1; 
 	}
-
-
 	
-
 	if (VK_F2 == wParam)//F2关闭
 	{
 		SendMessage(g_hWnd, WM_CLOSE, 0, 0);

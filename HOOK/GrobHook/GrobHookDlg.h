@@ -44,7 +44,7 @@ private:
 	void TrimStr(string &s);
 	void SpaceAndTabNum(string str, int& sNum, int &tNum);//count space and tab
 	void TypeKeyBackSpace(int times);
-	void TypeKeyEnter(string proLine);//proLine 上一行
+	void TypeKeyEnter(string proLine, int &sNum, int &tNum);//proLine 上一行
 	CMsgDlg* m_pMsgDlg;
 	HHOOK g_hKeyBoard;
 	HHOOK g_hMouse;

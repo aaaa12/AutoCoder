@@ -1,5 +1,15 @@
-1
-2
-3
-	
-	4
+// TODO: 在此添加控件通知处理程序代码
+	//CString source; //文本内容保存在source变量中 
+	//source = "waooOas我da\nsssss";
+	//if (OpenClipboard())
+	//{
+	//	HGLOBAL clipbuffer; 
+	//	char * buffer; 
+	//	EmptyClipboard(); 
+	//	clipbuffer = GlobalAlloc(GMEM_DDESHARE, source.GetLength() + 1);
+	//	buffer = (char*)GlobalLock(clipbuffer); 
+	//	strcpy(buffer, LPCSTR(source)); 
+	//	GlobalUnlock(clipbuffer); 
+	//	SetClipboardData(CF_TEXT, clipbuffer); 
+	//	CloseClipboard(); 
+	//}/	CloseClipboa

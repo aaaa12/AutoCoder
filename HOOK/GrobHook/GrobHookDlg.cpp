@@ -263,7 +263,7 @@ LRESULT CGrobHookDlg::OnSendText2Win(WPARAM wParam, LPARAM lParam)
 			else//
 			{
 				CString fileName;
-				fileName.Format("获取文件%s.txt", value);
+				fileName.Format("%s.txt", value.c_str());
 		
 				while (GetAsyncKeyState(18)) {};//wait for alt up
 
@@ -460,18 +460,20 @@ void CGrobHookDlg::TypeKeyBackSpace(int times)
 	}
 }
 
-void CGrobHookDlg::TypeKeyEnter(string proLine)
+void CGrobHookDlg::TypeKeyEnter(string proLine,int &sNum,int &tNum)
 {
-	int sNum, tNum;
-	SpaceAndTabNum(proLine, sNum, tNum);//前几行有tab，回车会自动对齐，所以回车后要先删除自动对齐加的tab
+	//TrimStr(proLine);
+	//if(proLine!="")
+	//	SpaceAndTabNum(proLine, sNum, tNum);//前几行有tab，回车会自动对齐，所以回车后要先删除自动对齐加的tab
+	
 	keybd_event(VK_RETURN, 0, 0, 0);
 	keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
-	for (int i = 0; i < tNum; i++)
-	{
-		Sleep(WaitTime);
-		keybd_event(VK_BACK, 0, 0, 0);
-		keybd_event(VK_BACK, 0, KEYEVENTF_KEYUP, 0);
-	}
+	//for (int i = 0; i < tNum; i++)
+	//{
+	//	Sleep(WaitTime);
+	//	keybd_event(VK_BACK, 0, 0, 0);
+	//	keybd_event(VK_BACK, 0, KEYEVENTF_KEYUP, 0);
+	//}
 }
 
 void CGrobHookDlg::TypeTextFile(CString path)
@@ -492,7 +494,7 @@ void CGrobHookDlg::TypeTextFile(CString path)
 	while (getline(myfile, line)) //line by line call TypeStr
 	{
 		Sleep(50);
-		TypeKeyEnter(oldLine.c_str());
+		TypeKeyEnter(oldLine.c_str(), sNum, tNum);
 		TypeStr(line.c_str());
 		oldLine = line;
 	}
@@ -529,13 +531,16 @@ void CGrobHookDlg::OutPutFile(CString path)
 		int sNum = 0, tNum = 0;
 		while (getline(myfile, line)) //line by line call TypeStr
 		{
+
 			Sleep(50);
-			TypeKeyEnter(proline);
+
+			TypeKeyEnter(proline, sNum, tNum);
+
 
 			int p = 0;
 			while (line[p] != 0)
 			{
-				::PostMessage(hWnd, WM_CHAR, (WPARAM)(line[p] & 0xFF), 0);
+				::SendMessage(hWnd, WM_CHAR, (WPARAM)(line[p] & 0xFF), 0);//send，要符合各种情况！post
 				p++;
 			}
 			proline = line;
@@ -673,49 +678,6 @@ void CGrobHookDlg::ShowLog(CString str)
 	fclose(stream);
 }
 
-void CGrobHookDlg::SaveStrToFile(CString fileName, CString str)
-{
-	if ("" == str)
-		return;
-
-	FILE *pt = NULL;
-	CString path = GetFilePath(fileName);
-	MakeDir(path);
-
-	pt = fopen(fileName, "w");
-	fprintf(pt, "%s", str);
-	fclose(pt);
-}
-CString CGrobHookDlg::ReadStrFromFile(CString path)
-{
-	CString ret;
-	char * buffer;	
-	FILE * f;	
-	long length;	
-	//以二进制形式打开文件	
-	f = fopen(path, "rb");
-	if (NULL == f)	
-	{		
-		return ret;
-	}	
-	//把文件的位置指针移到文件尾	
-	fseek(f, 0, SEEK_END);	
-	//获取文件长度;	
-	length = ftell(f);	
-	//把文件的位置指针移到文件开头	
-	fseek(f, 0, SEEK_SET);	
-	buffer = (char *)malloc((length + 1) * sizeof(char));
-	fread(buffer, 1, length, f);
-	buffer[length] = '\0';	
-	fclose(f);
-	ret.Format("%s", buffer);
-
-	free(buffer);
-
-	return ret;
-}
-
-
 void CGrobHookDlg::OnBnClickedOk()
 {
 	// TODO: 在此添加控件通知处理程序代码
@@ -782,5 +744,47 @@ CString CGrobHookDlg::GetFilePath(CString fileName)
 	CString path = fileName.Left(pos);
 	return path;
 
+}
 
+void CGrobHookDlg::SaveStrToFile(CString fileName, CString str)
+{
+	if ("" == str)
+		return;
+
+	FILE *pt = NULL;
+	CString path = GetFilePath(fileName);
+	MakeDir(path);
+
+	pt = fopen(fileName, "w");
+	fprintf(pt, "%s", str);
+	fclose(pt);
+}
+
+CString CGrobHookDlg::ReadStrFromFile(CString path)
+{
+	CString ret;
+	char * buffer;
+	FILE * f;
+	long length;
+	//以二进制形式打开文件	
+	f = fopen(path, "rb");
+	if (NULL == f)
+	{
+		return ret;
+	}
+	//把文件的位置指针移到文件尾	
+	fseek(f, 0, SEEK_END);
+	//获取文件长度;	
+	length = ftell(f);
+	//把文件的位置指针移到文件开头	
+	fseek(f, 0, SEEK_SET);
+	buffer = (char *)malloc((length + 1) * sizeof(char));
+	fread(buffer, 1, length, f);
+	buffer[length] = '\0';
+	fclose(f);
+	ret.Format("%s", buffer);
+
+	free(buffer);
+
+	return ret;
 }
