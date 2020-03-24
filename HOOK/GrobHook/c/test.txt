@@ -1,0 +1,20 @@
+
+		while (getline(myfile, line)) //line by line call TypeStr
+		{
+
+	}
+	else
+	{
+		FILE *pf = NULL;
+		int filelen = 0;
+		int i = 0;
+		char *buf;
+		pf = fopen(path, "r");
+		if (pf == NULL)
+		{
+			TypeStr("no file");
+			return false;
+		}
+		else
+		{
+			

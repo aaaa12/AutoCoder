@@ -29,7 +29,7 @@ private:
 	int iOldMod;//m_iMod的旧值，防止重复触发点击事件
 	int m_iMod;//0.hide cmd windows; 1.simulate type;2 WM_CAHR Message  ;3 use ClipBoard
 	int iRetMod;//when iTypeMod==2 how to change line. 1.simulate type enter key 2.post char value
-	int WaitTime = 16;//interval time between two pype
+	int WaitTime = 50;//interval time between two pype
 	string cmd;
 	string value;
 	const char *withShift = "~!@#$%^&*()_+QWERTYUIOP{}|ASDFGHJKL:\"ZXCVBNM<> ?	";
@@ -41,7 +41,7 @@ private:
 	char SwitchNoShift(char c);
 	bool CheckNoShift(char c, int &key);//to key code
 	bool CheckShift(char c, int &key);
-	void TrimStr(string &s);
+	string TrimStr(string s);
 	void SpaceAndTabNum(string str, int& sNum, int &tNum);//count space and tab
 	void TypeKeyBackSpace(int times);
 	void TypeKeyEnter(string proLine, int &sNum, int &tNum);//proLine 上一行
@@ -51,9 +51,9 @@ private:
 
 	//out put
 	void TypeStr(CString str);
-	void TypeTextFile(CString path);
-	void OutPutFile(CString path);
-	void FileToClip(CString path);
+	bool TypeTextFile(CString path);
+	bool OutPutFile(CString path);
+	bool FileToClip(CString path);
 
 	CString GetClipBoradText();
 	void SaveStrToFile(CString fileName, CString str);
@@ -65,6 +65,8 @@ private:
 
 	void MakeDir(CString path);
 	CString GetFilePath(CString fileName);
+
+	void AnysSleep(int iClock);
 protected:
 	HICON m_hIcon;
 

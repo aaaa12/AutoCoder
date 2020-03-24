@@ -63,8 +63,8 @@ BOOL CGrobHookDlg::OnInitDialog()
 		m_pMsgDlg = new CMsgDlg();
 		m_pMsgDlg->Create(IDD_MSG, this);
 	}
-	
-	iRetMod = 1;
+
+	iRetMod = 2;
 	SetHook(m_hWnd, g_hKeyBoard, g_hMouse);
 	ShowLog("运行中..");
 	CString str;
@@ -253,10 +253,12 @@ LRESULT CGrobHookDlg::OnSendText2Win(WPARAM wParam, LPARAM lParam)
 					stmp.Format("%s.txt", v[2].c_str());
 					SaveStrToFile(stmp,GetClipBoradText());
 					ShowLog("执行完成");
+					m_pMsgDlg->SetTxt("111111111111111111", true);
 				}
 				else 
 				{
 					ShowLog("解析失败");
+					m_pMsgDlg->SetTxt("000000000000000000", true);
 				}
 
 			}
@@ -266,15 +268,22 @@ LRESULT CGrobHookDlg::OnSendText2Win(WPARAM wParam, LPARAM lParam)
 				fileName.Format("%s.txt", value.c_str());
 		
 				while (GetAsyncKeyState(18)) {};//wait for alt up
-
-				if (1== m_iMod )
-					TypeTextFile(fileName);
+				bool ret;
+				if (1 == m_iMod)
+					ret=TypeTextFile(fileName);
 				else if(2== m_iMod )
-					OutPutFile(fileName);
+					ret = OutPutFile(fileName);
 				else if(3== m_iMod )
-					FileToClip(fileName);
-				value = "";
+					ret = FileToClip(fileName);
+
+			   if(ret)
+				   m_pMsgDlg->SetTxt("111111111111111111", true);
+			   else
+				   m_pMsgDlg->SetTxt("000000000000000000", true);
+
+	
 			}
+			AnysSleep(1000);
 			m_pMsgDlg->SetTxt("", false);
 			value = "";
 		}
@@ -391,7 +400,7 @@ bool CGrobHookDlg::CheckNoShift(char c, int &key)
 
 }
 
-void CGrobHookDlg::TypeStr(CString str)
+void CGrobHookDlg::TypeStr(CString str)//cstring 一个单位4字节
 {
 	//close caps lock 
 	BYTE btKeyState[256];
@@ -403,8 +412,18 @@ void CGrobHookDlg::TypeStr(CString str)
 	}
 
 	int key;
+	CString msg;
+	
+
+
 	for (int i = 0; i < str.GetLength(); i++)
 	{
+		msg.Format("%x", 0x80 & (unsigned long)str[i]);
+		//MessageBox(msg);
+		if ((unsigned long)(0x80 & (unsigned long)str[i]) == ((unsigned long)0x80))
+		{
+			continue;//跳过中文
+		}
 
 		Sleep(WaitTime);
 		if (CheckShift(str[i], key))
@@ -427,13 +446,15 @@ void CGrobHookDlg::TypeStr(CString str)
 	}
 }
 
-void CGrobHookDlg::TrimStr(string &s)
+string CGrobHookDlg::TrimStr(string s)
 {
-	if (!s.empty())
+	string ret=s;
+	if (!ret.empty())
 	{
-		s.erase(0, s.find_first_not_of(" "));
-		s.erase(s.find_last_not_of(" ") + 1);
+		ret.erase(0, ret.find_first_not_of(" "));
+		ret.erase(ret.find_last_not_of(" ") + 1);
 	}
+	return ret;
 }
 
 void CGrobHookDlg::SpaceAndTabNum(string str, int& sNum, int &tNum)
@@ -462,30 +483,32 @@ void CGrobHookDlg::TypeKeyBackSpace(int times)
 
 void CGrobHookDlg::TypeKeyEnter(string proLine,int &sNum,int &tNum)
 {
-	//TrimStr(proLine);
-	//if(proLine!="")
-	//	SpaceAndTabNum(proLine, sNum, tNum);//前几行有tab，回车会自动对齐，所以回车后要先删除自动对齐加的tab
+
+
+	/*string strim=TrimStr(proLine);
+	if(strim !="")*/
+		SpaceAndTabNum(proLine, sNum, tNum);//前几行有tab，回车会自动对齐，所以回车后要先删除自动对齐加的tab
 	
-	keybd_event(VK_RETURN, 0, 0, 0);
-	keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
-	//for (int i = 0; i < tNum; i++)
-	//{
-	//	Sleep(WaitTime);
-	//	keybd_event(VK_BACK, 0, 0, 0);
-	//	keybd_event(VK_BACK, 0, KEYEVENTF_KEYUP, 0);
-	//}
+	//keybd_event(VK_RETURN, 0, 0, 0);
+	//keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
+	for (int i = 0; i < tNum; i++)
+	{
+		Sleep(WaitTime);
+		keybd_event(VK_BACK, 0, 0, 0);
+		keybd_event(VK_BACK, 0, KEYEVENTF_KEYUP, 0);
+	}
 }
 
-void CGrobHookDlg::TypeTextFile(CString path)
+bool CGrobHookDlg::TypeTextFile(CString path)
 {
-	ifstream myfile(path);
+	ifstream myfile(path, ifstream::binary);//不指定二进制读取的话，中文会自动转码
 
 	if (!myfile.good())
 	{
 		TypeStr("no file");
 		ShowLog("路径错误");
 		myfile.close();
-		return;
+		return false;
 	}
 
 	string oldLine, line;
@@ -493,16 +516,21 @@ void CGrobHookDlg::TypeTextFile(CString path)
 	int sNum = 0, tNum = 0;
 	while (getline(myfile, line)) //line by line call TypeStr
 	{
+		string strim = TrimStr(line);
+		if (strim == "")
+			continue;
+
 		Sleep(50);
 		TypeKeyEnter(oldLine.c_str(), sNum, tNum);
 		TypeStr(line.c_str());
 		oldLine = line;
 	}
 	myfile.close();
+	return true;
 }
 
 //txt文件要保存为ansi编码
-void CGrobHookDlg::OutPutFile(CString path)
+bool CGrobHookDlg::OutPutFile(CString path)
 {
 
 	HWND hWnd = NULL;
@@ -512,7 +540,7 @@ void CGrobHookDlg::OutPutFile(CString path)
 	{
 		TypeStr("no handle");
 		ShowLog("未获取句柄");
-		return;
+		return false;
 	}
 	if (1 == iRetMod)
 	{
@@ -523,7 +551,7 @@ void CGrobHookDlg::OutPutFile(CString path)
 			TypeStr("no file");
 			ShowLog("路径错误");
 			myfile.close();
-			return;
+			return false;
 		}
 
 		string proline, line;
@@ -558,7 +586,7 @@ void CGrobHookDlg::OutPutFile(CString path)
 		{
 			TypeStr("no file");
 			ShowLog("路径错误");
-			return;
+			return false;
 		}
 		else
 		{
@@ -581,11 +609,12 @@ void CGrobHookDlg::OutPutFile(CString path)
 			}
 
 			free(buf); //最后记得要释放
-		}
+		} 
 	}
+	return true;
 }
 
-void CGrobHookDlg::FileToClip(CString path)
+bool CGrobHookDlg::FileToClip(CString path)
 {
 	FILE *pf = NULL;
 	int filelen = 0;
@@ -595,9 +624,9 @@ void CGrobHookDlg::FileToClip(CString path)
 	pf = fopen(path, "r");
 	if (pf == NULL)
 	{
-		TypeStr("no file");
+		//TypeStr("no file");
 		ShowLog("路径错误");
-		return;
+		return false;
 	};
 -
 	fseek(pf, 0, SEEK_END);
@@ -615,6 +644,7 @@ void CGrobHookDlg::FileToClip(CString path)
 		CloseClipboard();
 	}
 	fclose(pf);
+	return true;
 }
 
 void CGrobHookDlg::OnDestroy()
@@ -663,6 +693,9 @@ void CGrobHookDlg::ShowLog(CString str)
 	GetLocalTime(&sys);
 	CString fileName;
 	CString logTime;
+
+	MakeDir("log");
+
 	fileName.Format("log/%4d-%02d-%02d_log.txt", sys.wYear, sys.wMonth, sys.wDay);
 	logTime.Format("[%4d/%02d/%02d %02d:%02d:%02d]:", sys.wYear, sys.wMonth, sys.wDay, sys.wHour, sys.wMinute, sys.wSecond);
 	
@@ -787,4 +820,17 @@ CString CGrobHookDlg::ReadStrFromFile(CString path)
 	free(buffer);
 
 	return ret;
+}
+
+void CGrobHookDlg::AnysSleep(int iClock)
+{
+	clock_t s=clock();
+	MSG msg;
+	while (GetMessage(&msg, NULL, 0, 0))
+	{
+		if (clock() - s > iClock)
+			break;
+		TranslateMessage(&msg);//转换 如WM_KEYDOWN ->WM_CHAR
+		DispatchMessage(&msg);
+	}
 }
