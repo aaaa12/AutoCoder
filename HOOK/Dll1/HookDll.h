@@ -6,6 +6,7 @@
 #include <cassert>
 #include <time.h>
 #include <string>
+#include <vector>
 using namespace std;
 
 #define WM_SEND_TEXT2WIN (WM_USER+1)

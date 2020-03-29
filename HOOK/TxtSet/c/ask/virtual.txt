@@ -1,0 +1,4 @@
+typedef void (*PF)();
+PF pf;
+pf = (PF)*((int*)*(int*)(&b));
+pf();

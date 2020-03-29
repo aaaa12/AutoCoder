@@ -1,6 +1,20 @@
-﻿  正在生成代码
-  0 of 784 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
+﻿  GrobHookDlg.cpp
+c:\users\administrator\desktop\github\autocoder\hook\grobhook\grobhookdlg.cpp(195): warning C4018: “<”: 有符号/无符号不匹配
+c:\users\administrator\desktop\github\autocoder\hook\grobhook\grobhookdlg.cpp(340): warning C4018: “<”: 有符号/无符号不匹配
+c:\users\administrator\desktop\github\autocoder\hook\grobhook\grobhookdlg.cpp(349): warning C4018: “<”: 有符号/无符号不匹配
+c:\users\administrator\desktop\github\autocoder\hook\grobhook\grobhookdlg.cpp(387): warning C4018: “<”: 有符号/无符号不匹配
+c:\users\administrator\desktop\github\autocoder\hook\grobhook\grobhookdlg.cpp(396): warning C4018: “<”: 有符号/无符号不匹配
+c:\users\administrator\desktop\github\autocoder\hook\grobhook\grobhookdlg.cpp(636): warning C4552: ”-“: 未使用表达式结果
+c:\users\administrator\desktop\github\autocoder\hook\grobhook\grobhookdlg.cpp(628): warning C4101: “buffer”: 未引用的局部变量
+c:\users\administrator\desktop\github\autocoder\hook\grobhook\grobhookdlg.cpp(715): warning C4477: “fprintf”: 格式字符串“%s”需要类型“char *”的参数，但可变参数 1 拥有了类型“ATL::CStringT<char,StrTraitMFC<char,ATL::ChTraitsCRT<_CharType>>>”
+          with
+          [
+              _CharType=char
+          ]
+c:\users\administrator\desktop\github\autocoder\hook\grobhook\grobhookdlg.cpp(797): warning C4477: “fprintf”: 格式字符串“%s”需要类型“char *”的参数，但可变参数 1 拥有了类型“CString”
+  正在生成代码
+  108 of 1036 functions (10.4%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    0 functions had inline decision re-evaluated but remain unchanged
+    56 functions had inline decision re-evaluated but remain unchanged
   已完成代码的生成
   GrobHook.vcxproj -> C:\Users\Administrator\Desktop\GitHub\AutoCoder\HOOK\Release\HookForm.exe

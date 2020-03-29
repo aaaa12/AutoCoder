@@ -19,6 +19,7 @@ WPARAM wOldParam;
 #pragma data_seg("MySec")
 HWND g_hWnd = NULL;//一定要初始化化
 HWND g_hFocusWnd = NULL;
+vector<EVENTMSG> *m_pVecAction;
 #pragma data_seg()
 #pragma comment(linker,"/section:MySec,RWS") //read write share
 

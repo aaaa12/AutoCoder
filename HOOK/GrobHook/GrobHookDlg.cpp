@@ -9,6 +9,10 @@
 #include "afxdialogex.h"
 #include <vector>
 #include <io.h>
+#include <iostream>
+#include<vector>
+#include<fstream>
+#include<iterator>
 using namespace std;
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -41,7 +45,7 @@ BEGIN_MESSAGE_MAP(CGrobHookDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_RADIO2, &CGrobHookDlg::OnBnClickedRadio)
 	ON_BN_CLICKED(IDC_RADIO3, &CGrobHookDlg::OnBnClickedRadio)
 	ON_BN_CLICKED(IDC_RADIO4, &CGrobHookDlg::OnBnClickedRadio)
-	ON_BN_CLICKED(IDC_BUTTON1, &CGrobHookDlg::OnBnClickedButton1)
+	ON_BN_CLICKED(IDC_RECORD, &CGrobHookDlg::OnBnClickedRecord)
 END_MESSAGE_MAP()
 
 
@@ -833,4 +837,33 @@ void CGrobHookDlg::AnysSleep(int iClock)
 		TranslateMessage(&msg);//转换 如WM_KEYDOWN ->WM_CHAR
 		DispatchMessage(&msg);
 	}
+}
+
+void CGrobHookDlg::OnBnClickedRecord()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+		//vector Serize
+	vector<int>vecData;
+	for (int nIndex = 0; nIndex < 5; ++nIndex)
+		vecData.push_back(nIndex);
+
+	//写入文件
+	ofstream outFile("record.txt", std::ios::out | std::ios::binary);
+	if (outFile.is_open())
+	{
+		copy(vecData.begin(), vecData.end(), std::ostream_iterator<int>(outFile, " "));
+		outFile.close();
+	}
+
+	//从文件读取
+	vector<int>vecRst;
+	ifstream inFile("record.txt", std::ios::binary);
+	if (inFile.is_open())
+	{
+		copy(std::istream_iterator<int>(inFile), std::istream_iterator<int>(), back_inserter(vecRst));
+		inFile.close();
+	}
+
+
 }

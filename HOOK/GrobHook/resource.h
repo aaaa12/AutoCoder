@@ -7,6 +7,7 @@
 #define IDD_MSG                         129
 #define IDC_BTN_HOOK                    1000
 #define IDC_BUTTON1                     1001
+#define IDC_RECORD                      1001
 #define IDC_EDIT1                       1007
 #define IDC_RADIO1                      1009
 #define IDC_RADIO2                      1010
