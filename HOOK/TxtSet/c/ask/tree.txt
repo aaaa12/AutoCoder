@@ -1,0 +1,58 @@
+
+//tree order
+
+#include <iostream>
+using namespace std;
+
+struct Node
+{
+public:
+	int id;
+	Node* lNode = NULL;
+	Node* rNode = NULL;
+
+};
+
+void mOrder(Node* nd)//mid
+{
+	if (nd == NULL)
+		return;
+	mOrder(nd->lNode);
+	cout << nd->id << " ";
+	mOrder(nd->rNode);
+}
+void fOrder(Node* nd)//first
+{
+	if (nd == NULL)
+		return;
+	fOrder(nd->lNode);
+	fOrder(nd->rNode);
+	cout << nd->id << " ";
+}
+void lOrder(Node* nd)//last
+{
+	if (nd == NULL)
+		return;
+	lOrder(nd->lNode);
+	lOrder(nd->rNode);
+	cout << nd->id << " ";
+
+}
+int main()
+{
+	Node tree[10];
+
+	for (int i = 0; i < 10; i++)
+	{
+		tree[i].id = i;
+		if (2 * (i + 1) - 1 < 10)
+			tree[i].lNode = &tree[2 * (i+1)-1];
+		if (2 * (i + 1) < 10)
+			tree[i].rNode = &tree[2 * (i + 1)];
+	}
+
+	lOrder(tree);
+	//mOrder(tree);
+	//fOrder(tree);
+	return 0;
+}
