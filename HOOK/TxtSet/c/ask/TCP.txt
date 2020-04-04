@@ -1,0 +1,14 @@
+ClOSED,SYN_SENT,ESTABLISHED
+CLOSED,LISTEN,SYN_RECV,ESTABLISHED
+
+->SYN=1,seq=x
+<-SYN=1,ACK=1,ack=x=1,seq=y
+->ACK=1,ack=y+1,seq=x+1
+
+ESTABLISHED,FIN_TIME_WAIT1,FIN_TIME_WAIT2,TIME_WAIT,CLOSED
+ESTABLISHED,CLOSE_WAIT(!),LAST_ACK,CLOSED
+
+->FIN=1,seq=x
+<-ACK=1,ack=x+1,seq=y
+<-FIN=1,seq=w,ACK=1,ack=x+1    (!ÓÐack£¬ÇÒseq²»ÊÇy+1)
+->ACK=1,ack=w+1,seq=x+1

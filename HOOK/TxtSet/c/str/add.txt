@@ -1,0 +1,41 @@
+string addStrings(string num1, string num2)
+{
+	int p1 = num1.size() - 1;
+	int p2 = num2.size() - 1;
+
+	int n1, n2;
+	int step = 0;
+	string ret;
+	int sum = 0;
+	while (p1 >= 0 || p2 >= 0)
+	{
+		n1 = 0;
+		n2 = 0;
+		if (p1 >= 0)
+		{
+			n1 = num1[p1] - '0';
+		}
+		if (p2 >= 0)
+		{
+			n2 = num2[p2] - '0';
+		}
+
+		sum = step + n1 + n2;
+
+		step = sum / 10;
+		sum = sum % 10;
+		
+
+		char c = sum + '0';
+		ret = c + ret;
+		p1--;
+		p2--;
+
+	}
+	if (step >0)
+	{
+		char c = step + '0';
+		ret = c + ret;
+	}
+	return ret;
+}

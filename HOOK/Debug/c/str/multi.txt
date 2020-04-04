@@ -1,0 +1,64 @@
+//求两个大数的乘积（两数均为正数）  
+string strMulti(string str1, string str2)
+{
+	if (str1=="0" || str2 == "0")
+	{
+		return "0";
+	}
+	int m = str1.size();
+	int n = str2.size();;
+
+	//转换为数字  
+	for (int i = 0; i < m; ++i)
+	{
+		str1[i] -= '0';
+	}
+	for (int i = 0; i < n; ++i)
+	{
+		str2[i] -= '0';
+	}
+
+
+
+	int maxSize = m + n + 1;
+	char *res = new char[maxSize];
+	char *tes = new char[maxSize];
+	memset(res,0, maxSize);
+	int  multi;
+	int step=0;
+
+	for (int i = n - 1; i >= 0; --i)
+	{
+		int k = m + i + 1;
+		for (int j = m - 1; j >= 0; --j)
+		{
+			multi = (str2[i] * str1[j] + res[k]+ step) % 10;
+			step = (str2[i] * str1[j] + res[k]+ step) / 10;
+
+			res[k] = multi;
+			tes[k] = res[k] + '0';
+			k--;
+			//res[--k] += step;
+		}
+		if (k >= 0 && step != 0)
+		{
+			multi = (res[k] + step) % 10;
+			step = ( res[k] + step) / 10;
+			res[k] = multi;
+			tes[k] = res[k] + '0';
+			k--;
+		}
+	}
+	string ret;
+	int k = 0;
+	while (k < maxSize && res[k] == 0)
+	{
+		++k;
+	}
+	for (int i=k; i < maxSize; i++)
+	{
+		ret.push_back(res[i] + '0');
+	}
+
+	return ret;
+}

@@ -1,0 +1,33 @@
+三次握手:
+
+客户端状态变化 ClOSED,SYN_SENT,ESTABLISHED
+服务端状态变化 CLOSED,LISTEN,SYN_RECV,ESTABLISHED
+
+->SYN=1,seq=x
+<-SYN=1,ACK=1,ack=x=1,seq=y
+->ACK=1,ack=y+1,seq=x+1
+
+三次？
+放滞后连报文
+
+
+四次分手:
+
+客户端状态变化 ESTABLISHED,FIN_TIME_WAIT1,FIN_TIME_WAIT2,TIME_WAIT,CLOSED
+服务端状态变化 ESTABLISHED,CLOSE_WAIT,LAST_ACK,CLOSED
+
+->FIN=1,seq=x
+<-ACK=1,ack=x+1,seq=y
+<-FIN=1,seq=y,ACK=1,ack=x+1?
+->ACK=1,ack=y+1,seq=x+1
+
+TIME_WAIT？
+1.等待残留
+
+四次？
+只知道自己有没有发完
+
+2字节源地址，2字节目标地址
+4序列号seq
+4缺认序列号ack
+ACK,FIN,SYN

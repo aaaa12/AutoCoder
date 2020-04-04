@@ -1,0 +1,21 @@
+if BussinessMethodEx(Format('<Proc ID="Temp"><Content Type="Query">'+
+          'select * from T_ZYNJ_SJJBJGXX c where c.table_name=upper(''%s'') and instr('',''||upper('''+stField.DelimitedText+''')||'','','',''||column_name||'','')>0'+
+          '</Content></Proc>',[tblName]),'',sData,sError)>= 0 then
+          begin
+            XmlToRecordSet(PChar(String(sData)), rsComment);
+            if Assigned(rsComment) and (rsComment.RecordCount>0) then
+            begin
+              for j:=0 to stField.Count-1 do
+              begin
+                rsComment.MoveFirst;
+                while not rsComment.EOF do
+                begin
+                  if VarToStr(rsComment.Fields['COLUMN_NAME'].Value)=UpperCase(stField[j]) then
+                  begin
+                    stComment.Add(VarToStr(rsComment.Fields['COMMENTS'].Value));
+
+                    break;
+                  end;
+                  rsComment.MoveNext;
+                end;
+              end;

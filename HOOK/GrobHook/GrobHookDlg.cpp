@@ -632,7 +632,7 @@ bool CGrobHookDlg::FileToClip(CString path)
 		ShowLog("路径错误");
 		return false;
 	};
--
+
 	fseek(pf, 0, SEEK_END);
 	
 	if (OpenClipboard())
