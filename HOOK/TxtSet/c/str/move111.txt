@@ -1,0 +1,19 @@
+string move111(string str)
+{
+	if (str.size() < 3)
+		return str;
+
+	string res;
+
+	res += str[0];
+	res += str[1];
+	for (int i = 2; i < str.size(); i++)
+	{
+		int p = res.size() - 1;
+		if (res[p - 1] == res[p] && res[p] == str[i])
+			continue;
+		else
+			res += str[i];
+	}
+	return res;
+}

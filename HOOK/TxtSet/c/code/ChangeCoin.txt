@@ -1,0 +1,14 @@
+int moneyNumber[4] = { 1, 2, 5, 10 };
+bool ChangeCoin(vector<int>& current, int money) {
+	if (money == 0)return true;
+	for (int i = current.size() - 1; i >= 0; --i) {
+		if (current[i] > 0 && money >= moneyNumber[i]) {
+			current[i]--; 
+			if (ChangeCoin(current, money - moneyNumber[i]))
+				return true; 
+			else
+				current[i]++; 
+		}
+	}
+	return false;
+}
