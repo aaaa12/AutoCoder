@@ -1,0 +1,27 @@
+换行 #13#10
+//复制，截至'_'
+sZtbh:=Copy(sZtbh,1,Pos('_',sZtbh)-1);
+
+//删去最后的逗号,删除第m个字符开始长度为n的字符串
+Delete(str, length(str),1);
+
+//将str1插入str中
+Insert(str1,str,k);
+
+//替换,自己不变的
+sFamc:=StringReplace(sFamc,'(启用中)','',[rfReplaceAll]);
+
+//文件名
+ExtractFileName(FileName);
+ExtractFileExt(filename);
+
+短str，长str
+Pos(',84328,',','+GetSysParam(0,'KHDM','')+',')>0;
+
+--0是没有  长str ， 短str
+SELECT instr('a','abc') FROM dual;
+SELECT instr('bac','a') FROM dual;--2
+
+s := 'about: #delphi; #pascal, programming';
+List := TStringList.Create;
+ExtractStrings([';',',',':'],['#',' '],PChar(s),List);

@@ -1,0 +1,26 @@
+#include <Winsock2.h>
+
+#pragma comment(lib, "ws2_32.lib")
+
+
+WSAStartup;
+
+
+SOCKET sock = socket(AF_INET,SOCK_DGRAM,0);//SOCK_STREAM
+	
+SOCKADDR addrSrv;
+...
+
+bind(sock,addrSrv);
+
+SOCKADDR addrClient;
+
+while (1)
+{
+	recvfrom(sock, recvBuf,  addrClient,);
+	
+	sendto(sock,sendBuf, addrClient,);
+}
+
+closesocket(sock);
+WSACleanup();

@@ -1,0 +1,53 @@
+#include <iostream>
+#include<vector>
+#include<stack>
+#include<queue>
+#include<map>
+#include<set>
+#include<string>
+using namespace std;
+
+
+void PrintVector(vector<int> v)
+{
+	for (int i = 0; i < v.size(); i++)
+	{
+		cout << v[i] << " ";
+	}
+	cout << endl;
+}
+
+void bq01()
+{
+	int N = 10;
+	//weight
+	vector<int> w={ 5,1,2,4,5,6,7,9,12,3 };
+	//value
+	vector<int> v = { 4,1,6,7,8,9,7,2,7,1 };
+	//bear weight
+	int W = 40;
+
+	vector<int> F;
+	for (int i = 0; i <= 40; i++)
+		F.push_back(0);
+
+	for (int i = 0; i < 10; i++)
+	{
+		for (int wi = 40; wi >0; wi--)
+		{
+			if(wi - w[i]>=0)
+			F[wi] = max(F[wi],F[wi - w[i]] + v[i]);
+		}
+		PrintVector(F);
+	}
+
+	return;
+}
+
+
+int main()
+{
+	bq01();
+}
+
+

@@ -1,0 +1,172 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <stack>
+#include <map>
+using namespace std;
+
+ bool MySplit(string str,vector<string> &v)
+{
+	string num,tmp;
+	for (int i = 0; i<str.size(); i++)
+	{
+		
+		if ('0' <= str[i] && str[i] <= '9')
+		{
+			num += str[i];
+		}
+		else if ('+' == str[i] || '-' == str[i] ||
+			     '*' == str[i] || '/' == str[i] ||
+			     '(' == str[i] || ')' == str[i])
+		{
+			if(num != "")
+				v.push_back(num);
+			num = "";
+
+			tmp = str[i];
+			v.push_back(tmp);
+		}
+		else if (' ' == str[i])
+		{
+			continue;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	if (num != "")
+		v.push_back(num);
+
+	return true;
+}
+
+ bool popOp(stack<int> &nums, stack<char> &ops)
+ {
+	 if (nums.size() < 2)
+	 {
+		 cout << "error not enough num" << endl;
+		 return false;
+	 }
+
+	 int a = nums.top();
+	 nums.pop();
+	 int b = nums.top();
+	 nums.pop();
+
+	 char op= ops.top();
+	 ops.pop();
+
+	 int c;
+	 switch (op)
+	 {
+	 case '+':
+		 c = b + a;
+		 break;
+	 case '-':
+		 c = b - a;
+		 break;
+	 case '*':
+		 c = b * a;
+		 break;
+	 case '/':
+		 c = b / a;
+		 break;
+	 default:
+		 cout << "error op" << endl;
+		 return false;
+		 break;
+	 }
+	 nums.push(c);
+	 
+	 return true;
+ }
+ bool popOps(stack<int> &nums, stack<char> &ops,char curOp)
+ {
+	 if (nums.size() < 2)
+	 {
+		 ops.push(curOp);
+		 return true;
+	 }
+
+	 map<char, int> mLv;
+	 mLv[')'] = 0;
+	 mLv['+'] = 1;
+	 mLv['-'] = 1;
+	 mLv['*'] = 2;
+	 mLv['/'] = 2;
+
+	 while (ops.size()>0)
+	 {
+		 char topOp = ops.top();
+
+		 if ('(' == topOp)
+		 {
+			 if (')' == curOp)
+			 {
+				 ops.pop();
+				 return true;
+			 }
+			 break;
+		 }
+		 else
+		 {
+			 if (mLv[topOp] >= mLv[curOp])
+			 {
+				 if (!popOp(nums, ops))
+					 return false;
+			 }
+			 else
+			 {
+				 ops.push(curOp);
+				 return true;
+			 }
+		 }
+	 }
+
+	 
+	ops.push(curOp);
+	 
+	 return true;
+ }
+
+bool calc(string str,int &ret)
+{
+	stack<int> nums;
+	stack<char> ops;
+
+	vector<string> v;
+	if (MySplit(str, v))
+	{
+		for (int i = 0; i < v.size(); i++)
+		{
+			if ("+" == v[i] || "-" == v[i] || "*" == v[i] || "/" == v[i]||")" == v[i])
+			{
+				popOps(nums, ops, v[i][0]);
+			}
+			else if ("(" == v[i])
+			{
+				ops.push(v[i][0]);
+			}
+			else
+			{
+				int num = atoi(v[i].c_str());
+				nums.push(num);
+			}
+		}
+
+		while (ops.size() > 0)
+		{
+			popOp(nums, ops);
+		}
+
+		ret = nums.top();
+		return true;
+	}
+	else
+	{
+		cout << "error can not split" << endl;
+		return false;
+	}	
+}
