@@ -1,7 +1,7 @@
 ﻿// dllmain.cpp : 定义 DLL 应用程序的入口点。
 #include "pch.h"
 #include "HookDll.h"
-
+#include "KMHookDll.h"
 
 
 HHOOK g_hMouse = NULL;
@@ -28,6 +28,8 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 	LPVOID lpReserved
 )
 {
+
+	CKMHookDll::GetInstance()->SetGlobalInstance(hModule);
 	g_hInst = hModule;
 	//或者 GetModuleHandle
 	switch (ul_reason_for_call)
@@ -51,9 +53,9 @@ void SetMsgToDlg(string str)
 }
 
 LRESULT CALLBACK MouseProc(
-int nCode,WPARAM wParam,LPARAM lParam) 
+	int nCode, WPARAM wParam, LPARAM lParam)
 {
-	
+
 	/*if (state == "on"&&wParam == WM_LBUTTONDOWN)
 	{
 
@@ -75,33 +77,33 @@ LRESULT CALLBACK KeyBoardProc(
 	{
 		return CallNextHookEx(g_hKeyBoard, nCode, wParam, lParam);
 	}
-	
+
 	//每次键盘事件更新当前输入的句柄，只有在这才能正确获取当前句柄，因为调用该函数是当前进程
 	g_hFocusWnd = GetFocus();
 
 
 	//do nothing if is alt or shfit
 	//命令获取时，屏蔽alt，避免触发当前应用的快捷菜单
-	if ((18 == wParam)&& "on"==state)
+	if ((18 == wParam) && "on" == state)
 	{
-		return 1; 
+		return 1;
 	}
-	
+
 	if (VK_F2 == wParam)//F2关闭
 	{
 		SendMessage(g_hWnd, WM_CLOSE, 0, 0);
 		UnhookWindowsHookEx(g_hKeyBoard);
 		return 1;
 	}
-	else if ("off"==state && 1 == (lParam >> 29 & 1) && ('1' == wParam))//alt+1
+	else if ("off" == state && 1 == (lParam >> 29 & 1) && ('1' == wParam))//alt+1
 	{
-		rtm= clock();
+		rtm = clock();
 		SetMsgToDlg("接收命令...");
 		state = "on";
 		PostMessage(g_hWnd, WM_SEND_TEXT2WIN, wParam, HOOK_CMD_SHOW);
 		return 1;
 	}
-	else if ("on"== state && 1 == (lParam >> 29 & 1) && ('2' == wParam))//alt+2
+	else if ("on" == state && 1 == (lParam >> 29 & 1) && ('2' == wParam))//alt+2
 	{
 
 		SetMsgToDlg("提交命令...");
@@ -114,9 +116,9 @@ LRESULT CALLBACK KeyBoardProc(
 		PostMessage(g_hWnd, WM_SEND_TEXT2WIN, wParam, 0);//错误记录：本来是sendMessage的，会导致编辑器一直等待输入而卡死。
 		return 1;
 	};
-	
+
 	return  CallNextHookEx(g_hKeyBoard, nCode, wParam, lParam);
-	
+
 
 }
 void SetHook(HWND hWnd, HHOOK &hKeyBoard, HHOOK &hMouse)
@@ -129,11 +131,11 @@ void SetHook(HWND hWnd, HHOOK &hKeyBoard, HHOOK &hMouse)
 	hKeyBoard = g_hKeyBoard;//rlease when close
 	hMouse = g_hMouse;
 	SetMsgToDlg("挂钩成功");
-	
+
 }
 
 void GetFocusWnd(HWND &hWnd)
 {
-	hWnd= g_hFocusWnd;
+	hWnd = g_hFocusWnd;
 }
 

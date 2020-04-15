@@ -84,4 +84,7 @@ public:
 	afx_msg void OnBnClickedRadio();
 	afx_msg void OnBnClickedButton1();
 	afx_msg void OnBnClickedRecord();
+	afx_msg void OnBnClickedButton2();
+	afx_msg void OnBnClickedButton3();
+	afx_msg void OnBnClickedButton4();
 };

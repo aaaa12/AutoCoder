@@ -18,5 +18,6 @@ using namespace std;
 #ifdef DLLEXAM_EXPORTS
 	_declspec(dllimport)  void SetHook(HWND hd, HHOOK &hKeyBoard, HHOOK &hMouse);
 	_declspec(dllimport)  void GetFocusWnd(HWND &hWnd);
+
 #endif
 

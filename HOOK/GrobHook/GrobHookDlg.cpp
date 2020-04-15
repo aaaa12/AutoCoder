@@ -13,6 +13,7 @@
 #include<vector>
 #include<fstream>
 #include<iterator>
+#include "KMHookDll.h"
 using namespace std;
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -46,6 +47,8 @@ BEGIN_MESSAGE_MAP(CGrobHookDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_RADIO3, &CGrobHookDlg::OnBnClickedRadio)
 	ON_BN_CLICKED(IDC_RADIO4, &CGrobHookDlg::OnBnClickedRadio)
 	ON_BN_CLICKED(IDC_RECORD, &CGrobHookDlg::OnBnClickedRecord)
+	ON_BN_CLICKED(IDC_BUTTON3, &CGrobHookDlg::OnBnClickedButton3)
+	ON_BN_CLICKED(IDC_BUTTON4, &CGrobHookDlg::OnBnClickedButton4)
 END_MESSAGE_MAP()
 
 
@@ -866,4 +869,25 @@ void CGrobHookDlg::OnBnClickedRecord()
 	}
 
 
+}
+
+void CGrobHookDlg::OnBnClickedButton2()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	
+}
+
+
+void CGrobHookDlg::OnBnClickedButton3()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CKMHookDll::GetInstance()->InstallHook(true, true, true);
+	
+}
+
+
+void CGrobHookDlg::OnBnClickedButton4()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CKMHookDll::GetInstance()->RunScript();
 }
